@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Login | SRI GIFTS</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .auth-container { max-width: 400px; margin: 4rem auto; padding: 2rem; background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); text-align: center; box-shadow: var(--shadow-lg); }
+        .form-group { margin-bottom: 1.5rem; text-align: left; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
+        .form-group input { width: 100%; padding: 0.8rem; border: 1px solid #ccc; border-radius: 6px; font-family: inherit; }
+        .error-msg { color: red; margin-top: 1rem; display: none; }
+        .auth-link { margin-top: 1.5rem; display: block; color: var(--accent-color); text-decoration: none; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">SRI <span>GIFTS</span></div>
+        <nav>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="products.html">Shop</a></li>
+                <li><a href="track-order.html">Track Order</a></li>
+            </ul>
+        </nav>
+    </header>
+    <div class="auth-container">
+        <h2>Customer Login</h2><br>
+        <form id="login-form">
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="email" required>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="password" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
+            <p id="error-msg" class="error-msg">Invalid email or password.</p>
+        </form>
+        <a href="signup.html" class="auth-link">Don't have an account? Sign Up</a>
+    </div>
+    <script>
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            try {
+                const res = await fetch('/api/user/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    localStorage.setItem('sri_session_id', data.sessionId);
+                    window.location.href = 'index.html';
+                } else {
+                    document.getElementById('error-msg').textContent = data.error || 'Login failed';
+                    document.getElementById('error-msg').style.display = 'block';
+                }
+            } catch (error) {
+                document.getElementById('error-msg').textContent = 'Server error';
+                document.getElementById('error-msg').style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

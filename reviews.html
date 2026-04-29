@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reviews | SRI GIFTS</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .review-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .review-card {
+            background-color: var(--card-bg);
+            padding: 2.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            transition: var(--transition);
+        }
+
+        .review-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-5px);
+        }
+
+        .stars {
+            color: var(--accent-color);
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+        }
+
+        .reviewer {
+            font-weight: 600;
+            margin-top: 1.5rem;
+            color: var(--primary-color);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Header Navigation -->
+    <header>
+        <a href="index.html" class="logo">SRI GIFTS</a>
+        <nav>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="products.html">Products</a></li>
+                <li><a href="reviews.html">Reviews</a></li>
+                <li><a href="track-order.html">Track Order</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="account.html">Profile</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="page-header">
+        <h1>Client Stories</h1>
+        <p>What our clients say about the memories we help create.</p>
+    </div>
+
+    <!-- Reviews Section -->
+    <section class="container" style="padding-top: 2rem; min-height: 50vh;">
+
+        <div class="review-grid">
+            <!-- Review 1: Photo Frames -->
+            <div class="review-card">
+                <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                <p>"The minimalist black photo frame I ordered was purely exquisite. The build quality and the finish
+                    added an immense glow to my living room memory wall. Exceptional service from the SRI GIFTS team."
+                </p>
+                <div class="reviewer">- Anjali S. (Photo Frames)</div>
+            </div>
+
+            <!-- Review 2: Keychains -->
+            <div class="review-card">
+                <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                <p>"I ordered a customized leather and metal keychain as an anniversary gift. The engraving was
+                    incredibly sharp, clean, and elegant. It looks and feels highly premium. Highly recommended!"</p>
+                <div class="reviewer">- Rajesh M. (Keychains)</div>
+            </div>
+
+            <!-- Review 3: Overall Services -->
+            <div class="review-card">
+                <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                <p>"SRI GIFTS is now my go-to place for all gifting needs. The packaging was stunning, tracking the
+                    order was seamless, and the overall customer experience is truly luxury tier."</p>
+                <div class="reviewer">- Sarah V. (Overall Service)</div>
+            </div>
+
+            <div class="review-card">
+                <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                <p>"Bought the premium wooden box to store jewelry. The scent of the wood and the custom carved lid
+                    makes it priceless. Will be coming back for more 3D decor very soon!"</p>
+                <div class="reviewer">- Michael B. (Personalized Gifts)</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Floating Elements -->
+    <div class="floating-cart" title="View Cart">
+        <span class="cart-count">0</span>
+        <svg viewBox="0 0 24 24">
+            <path
+                d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1.003 1.003 0 0 0 20 4H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z" />
+        </svg>
+    </div>
+
+    <!-- WhatsApp Contact Link -->
+    <a href="https://wa.me/919080125879" target="_blank" class="floating-whatsapp" title="Direct Message on WhatsApp">
+        <svg viewBox="0 0 24 24">
+            <path
+                d="M12.013 2a9.982 9.982 0 0 0-8.525 15.176l-1.351 4.936 5.053-1.325A9.972 9.972 0 1 0 12.013 2zm-.013 18.067a8.04 8.04 0 0 1-4.08-1.1l-.29-.17-3.033.795.81-2.955-.187-.297a8.04 8.04 0 1 1 6.78 3.727zm4.398-5.99c-.24-.12-1.42-.7-1.642-.78-.22-.08-.382-.12-.544.12-.16.24-.622.78-.762.94-.14.16-.28.18-.52.06a6.52 6.52 0 0 1-1.916-1.182 7.15 7.15 0 0 1-1.328-1.65c-.14-.24-.015-.37.105-.49.108-.108.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.544-1.312-.746-1.796-.195-.47-.393-.406-.544-.413h-.462c-.16 0-.422.06-.642.3-1.056 1.15-.24 2.822.8 4.21.144.193 1.053 1.7 2.656 2.38 1.408.597 1.966.64 2.585.54.737-.118 1.42-.58 1.62-.114.2.466 -.22 1.405-.28 1.545-.06.14-.14.18-.38.06z" />
+        </svg>
+    </a>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <h2 class="logo" style="margin: 0; font-size: 1.5rem;">SRI GIFTS</h2>
+            <div class="footer-nav">
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="about.html">About</a></li>
+                    <li><a href="track-order.html">Track Order</a></li>
+                </ul>
+            </div>
+        </div>
+        <p class="copyright">&copy; 2026 SRI GIFTS. Premium Gifting Experience.</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

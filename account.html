@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile | SRI GIFTS</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .profile-container {
+            max-width: 1000px;
+            margin: 4rem auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2rem;
+        }
+
+        .profile-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            padding: 2rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .profile-card h3 {
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .user-info p {
+            margin-bottom: 0.8rem;
+            font-size: 1.1rem;
+        }
+
+        .user-info strong {
+            color: var(--primary-color);
+            display: inline-block;
+            width: 100px;
+        }
+
+        .order-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .order-table th,
+        .order-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            text-align: left;
+        }
+
+        .order-table th {
+            background-color: #f9f9f9;
+            font-weight: 600;
+        }
+
+        .status-badge {
+            padding: 0.4rem 0.8rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .status-processing {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-shipped {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .status-delivered {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-default {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+
+        @media (max-width: 768px) {
+            .profile-container {
+                grid-template-columns: 1fr;
+            }
+
+            .order-table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <a href="index.html" class="logo">SRI GIFTS</a>
+        <nav>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="products.html">Products</a></li>
+                <li><a href="reviews.html">Reviews</a></li>
+                <li><a href="track-order.html">Track Order</a></li>
+                <li><a href="about.html">About</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="page-header" style="padding-bottom: 0; background: none;">
+        <h1 id="welcome-text">My Profile</h1>
+    </div>
+
+    <div class="profile-container">
+        <!-- Account Details -->
+        <div class="profile-card">
+            <h3>Account Details</h3>
+            <div class="user-info" id="user-details">
+                <p>Loading details...</p>
+            </div>
+            <button class="btn" style="border: 1px solid var(--border-color); width: 100%; margin-top: 1.5rem;"
+                id="logout-btn">Logout</button>
+        </div>
+
+        <!-- Order History -->
+        <div class="profile-card">
+            <h3>Order History</h3>
+            <table class="order-table">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Items</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="orders-list">
+                    <tr>
+                        <td colspan="4" style="text-align:center;">Loading orders...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Floating Elements -->
+    <div class="floating-cart" title="View Cart">
+        <span class="cart-count">0</span>
+        <svg viewBox="0 0 24 24">
+            <path
+                d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1.003 1.003 0 0 0 20 4H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z" />
+        </svg>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const sessionId = localStorage.getItem('sri_session_id');
+            if (!sessionId) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // The script.js will fetch user session and populate currentUser.
+            // We wait a brief moment for it to complete.
+            setTimeout(() => {
+                // Ensure currentUser is globally available from script.js
+                // Alternatively, we can fetch it again here to be safe.
+                fetchProfile();
+            }, 500);
+
+            async function fetchProfile() {
+                try {
+                    const res = await fetch('/api/user/session/' + sessionId);
+                    const data = await res.json();
+
+                    if (data.success) {
+                        const user = data.user;
+                        document.getElementById('welcome-text').textContent = 'Welcome, ' + (user.name || 'User');
+
+                        document.getElementById('user-details').innerHTML = `
+                            <p><strong>Name:</strong> ${user.name || 'N/A'}</p>
+                            <p><strong>Email:</strong> ${user.email}</p>
+                            <p><strong>Mobile:</strong> ${user.mobile}</p>
+                            <p><strong>Address:</strong> ${user.address ? user.address + ', ' + user.city + ' - ' + user.pincode : 'No address saved.'}</p>
+                        `;
+
+                        fetchOrders(user.id);
+                    } else {
+                        window.location.href = 'login.html';
+                    }
+                } catch (error) {
+                    document.getElementById('user-details').innerHTML = '<p style="color:red;">Error loading profile.</p>';
+                }
+            }
+
+            async function fetchOrders(userId) {
+                try {
+                    const res = await fetch('/api/user/' + userId + '/orders');
+                    const data = await res.json();
+                    const tbody = document.getElementById('orders-list');
+                    tbody.innerHTML = '';
+
+                    if (data.orders.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">You have no past orders.</td></tr>';
+                        return;
+                    }
+
+                    data.orders.forEach(order => {
+                        let itemsParsed = [];
+                        try { itemsParsed = JSON.parse(order.items || '[]'); } catch (e) { }
+                        let itemsStr = itemsParsed.map(i => i.title).join(', ');
+
+                        let statusClass = 'status-default';
+                        if (order.status === 'Processing') statusClass = 'status-processing';
+                        if (order.status === 'Shipped' || order.status === 'Out for Delivery') statusClass = 'status-shipped';
+                        if (order.status === 'Delivered') statusClass = 'status-delivered';
+
+                        tbody.insertAdjacentHTML('beforeend', `
+                            <tr>
+                                <td>${order.orderId}</td>
+                                <td>${itemsStr || '-'}</td>
+                                <td>₹${order.total || 0}</td>
+                                <td><span class="status-badge ${statusClass}">${order.status}</span></td>
+                            </tr>
+                        `);
+                    });
+                } catch (error) {
+                    document.getElementById('orders-list').innerHTML = '<tr><td colspan="4" style="text-align:center; color:red;">Error loading orders.</td></tr>';
+                }
+            }
+
+            document.getElementById('logout-btn').addEventListener('click', () => {
+                localStorage.removeItem('sri_session_id');
+                window.location.href = 'login.html';
+            });
+        });
+    </script>
+</body>
+
+</html>
