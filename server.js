@@ -71,7 +71,7 @@ app.post('/api/user/login', (req, res) => {
 app.get('/api/user/session/:sessionId', (req, res) => {
     const sessionId = req.params.sessionId;
     db.get(`
-        SELECT u.id, u.email, u.mobile, u.name, u.address, u.city, u.pincode 
+        SELECT u.id, u.email, u.mobile, u.name, u.address, u.city, u.pincode, u.rewards 
         FROM users u 
         JOIN sessions s ON u.id = s.userId 
         WHERE s.sessionId = ?
@@ -85,7 +85,7 @@ app.get('/api/user/session/:sessionId', (req, res) => {
 // Get User Order History
 app.get('/api/user/:userId/orders', (req, res) => {
     const userId = req.params.userId;
-    db.all('SELECT * FROM orders WHERE userId = ? ORDER BY orderId DESC', [userId], (err, rows) => {
+    db.all('SELECT * FROM orders WHERE userId = ? ORDER BY rowid DESC', [userId], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ success: true, orders: rows });
     });
@@ -126,10 +126,10 @@ app.post('/api/products', (req, res) => {
 app.post('/api/products/:id/stock', (req, res) => {
     const productId = req.params.id;
     const { inStock } = req.body; // Expects 0 or 1
-    
+
     if (inStock === undefined) return res.status(400).json({ error: 'inStock status required' });
 
-    db.run('UPDATE products SET inStock = ? WHERE id = ?', [inStock ? 1 : 0, productId], function(err) {
+    db.run('UPDATE products SET inStock = ? WHERE id = ?', [inStock ? 1 : 0, productId], function (err) {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ success: true, message: 'Stock updated' });
     });
@@ -166,7 +166,7 @@ app.get('/api/orders/:id', (req, res) => {
 
 // Update or Create Order Tracking
 app.post('/api/orders', (req, res) => {
-    const { orderId, status, message, total, items, customerName, address, city, pincode, userId } = req.body;
+    const { orderId, status, message, total, items, customerName, address, city, pincode, userId, paymentRef } = req.body;
 
     if (!orderId || !status) {
         return res.status(400).json({ error: 'Order ID and status are required' });
@@ -174,7 +174,7 @@ app.post('/api/orders', (req, res) => {
 
     db.get('SELECT * FROM orders WHERE orderId = ?', [orderId], (err, existingOrder) => {
         if (err) return res.status(500).json({ error: err.message });
-        
+
         if (existingOrder) {
             // Admin is updating the order
             const newStatus = status || existingOrder.status;
@@ -186,18 +186,27 @@ app.post('/api/orders', (req, res) => {
             const newCity = city !== undefined ? city : existingOrder.city;
             const newPincode = pincode !== undefined ? pincode : existingOrder.pincode;
             const newUserId = userId !== undefined ? userId : existingOrder.userId;
+            const newPaymentRef = paymentRef !== undefined ? paymentRef : existingOrder.paymentRef;
 
-            const stmt = db.prepare('UPDATE orders SET status=?, message=?, total=?, items=?, customerName=?, address=?, city=?, pincode=?, userId=? WHERE orderId=?');
-            stmt.run([newStatus, newMessage, newTotal, newItems, newCustomerName, newAddress, newCity, newPincode, newUserId, orderId], function (err) {
+            const stmt = db.prepare('UPDATE orders SET status=?, message=?, total=?, items=?, customerName=?, address=?, city=?, pincode=?, userId=?, paymentRef=? WHERE orderId=?');
+            stmt.run([newStatus, newMessage, newTotal, newItems, newCustomerName, newAddress, newCity, newPincode, newUserId, newPaymentRef, orderId], function (err) {
                 if (err) return res.status(500).json({ error: err.message });
-                res.json({ success: true, message: 'Order updated successfully' });
+                
+                if (existingOrder.status !== 'Delivered' && newStatus === 'Delivered' && newUserId) {
+                    db.run('UPDATE users SET rewards = rewards + 10 WHERE id = ?', [newUserId], function(err) {
+                        if (err) console.error("Reward error", err);
+                        res.json({ success: true, message: 'Order updated and rewards added' });
+                    });
+                } else {
+                    res.json({ success: true, message: 'Order updated successfully' });
+                }
             });
         } else {
             // Customer is creating a new order
-            const stmt = db.prepare('INSERT INTO orders (orderId, status, message, total, items, customerName, address, city, pincode, userId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-            stmt.run([orderId, status, message, total || 0, JSON.stringify(items || []), customerName, address, city, pincode, userId || null], function (err) {
+            const stmt = db.prepare('INSERT INTO orders (orderId, status, message, total, items, customerName, address, city, pincode, userId, paymentRef) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+            stmt.run([orderId, status, message, total || 0, JSON.stringify(items || []), customerName, address, city, pincode, userId || null, paymentRef || null], function (err) {
                 if (err) return res.status(500).json({ error: err.message });
-                
+
                 if (userId && address && city && pincode) {
                     db.run('UPDATE users SET address=?, city=?, pincode=?, name=? WHERE id=?', [address, city, pincode, customerName, userId]);
                 }
@@ -207,7 +216,24 @@ app.post('/api/orders', (req, res) => {
     });
 });
 
+// Delete an order
+app.delete('/api/orders/:id', (req, res) => {
+    const orderId = req.params.id;
+    db.run('DELETE FROM orders WHERE orderId = ?', [orderId], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true, message: 'Order deleted successfully' });
+    });
+});
+
 // 4. Reviews
+// Get all reviews
+app.get('/api/reviews', (req, res) => {
+    db.all('SELECT * FROM reviews ORDER BY createdAt DESC', [], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true, reviews: rows });
+    });
+});
+
 // Get reviews for a product
 app.get('/api/reviews/:productTitle', (req, res) => {
     const productTitle = req.params.productTitle;
@@ -222,13 +248,13 @@ app.get('/api/reviews/:productTitle', (req, res) => {
 
 // Add a review
 app.post('/api/reviews', (req, res) => {
-    const { productTitle, userId, userName, rating, comment } = req.body;
+    const { productTitle, userId, userName, rating, comment, photo } = req.body;
     if (!productTitle || !rating) {
         return res.status(400).json({ error: 'Product title and rating are required' });
     }
 
-    const stmt = db.prepare('INSERT INTO reviews (productTitle, userId, userName, rating, comment) VALUES (?, ?, ?, ?, ?)');
-    stmt.run([productTitle, userId || null, userName || 'Guest', rating, comment || ''], function (err) {
+    const stmt = db.prepare('INSERT INTO reviews (productTitle, userId, userName, rating, comment, photo) VALUES (?, ?, ?, ?, ?, ?)');
+    stmt.run([productTitle, userId || null, userName || 'Guest', rating, comment || '', photo || null], function (err) {
         if (err) {
             res.status(500).json({ error: err.message });
         } else {
@@ -238,7 +264,160 @@ app.post('/api/reviews', (req, res) => {
     stmt.finalize();
 });
 
+// 5. User Profile & Password
+app.put('/api/user/:id', (req, res) => {
+    const userId = req.params.id;
+    const { name, email, mobile, dob } = req.body;
+    db.run('UPDATE users SET name = ?, email = ?, mobile = ?, dob = ? WHERE id = ?', [name, email, mobile, dob, userId], function (err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true, message: 'Profile updated successfully' });
+    });
+});
+
+app.put('/api/user/:id/password', (req, res) => {
+    const userId = req.params.id;
+    const { currentPassword, newPassword } = req.body;
+    
+    db.get('SELECT password FROM users WHERE id = ?', [userId], (err, user) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (!user || user.password !== currentPassword) {
+            return res.status(401).json({ error: 'Incorrect current password' });
+        }
+        
+        db.run('UPDATE users SET password = ? WHERE id = ?', [newPassword, userId], function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true, message: 'Password updated successfully' });
+        });
+    });
+});
+
+// 6. Addresses
+app.get('/api/user/:id/addresses', (req, res) => {
+    const userId = req.params.id;
+    db.all('SELECT * FROM addresses WHERE userId = ?', [userId], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true, addresses: rows });
+    });
+});
+
+app.post('/api/user/:id/addresses', (req, res) => {
+    const userId = req.params.id;
+    const { type, address, city, pincode, isDefault } = req.body;
+    db.run('INSERT INTO addresses (userId, type, address, city, pincode, isDefault) VALUES (?, ?, ?, ?, ?, ?)', 
+        [userId, type, address, city, pincode, isDefault ? 1 : 0], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true, id: this.lastID });
+    });
+});
+
+app.delete('/api/user/:id/addresses/:addressId', (req, res) => {
+    const { id, addressId } = req.params;
+    db.run('DELETE FROM addresses WHERE id = ? AND userId = ?', [addressId, id], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true });
+    });
+});
+
+// 7. Notifications & Offers
+app.get('/api/user/:id/notifications', (req, res) => {
+    const userId = req.params.id;
+    // Get user-specific notifications
+    db.all('SELECT * FROM notifications WHERE userId = ? ORDER BY createdAt DESC', [userId], (err, notifs) => {
+        if (err) return res.status(500).json({ error: err.message });
+        
+        // Also get active offers for today (simple string comparison for YYYY-MM-DD or all if you want to show upcoming)
+        // For simplicity, let's fetch all offers and let frontend decide, or fetch today's offers.
+        // We will fetch all offers.
+        db.all('SELECT * FROM offers ORDER BY offerDate DESC', [], (err, offers) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true, notifications: notifs, offers: offers });
+        });
+    });
+});
+
+app.get('/api/offers', (req, res) => {
+    db.all('SELECT * FROM offers ORDER BY offerDate DESC', [], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true, offers: rows });
+    });
+});
+
+app.post('/api/offers', (req, res) => {
+    const { title, message, offerDate, category, discount } = req.body;
+    db.run('INSERT INTO offers (title, message, offerDate, category, discount) VALUES (?, ?, ?, ?, ?)', [title, message, offerDate, category || 'All', discount || 0], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true, id: this.lastID });
+    });
+});
+
+app.delete('/api/offers/:id', (req, res) => {
+    const offerId = req.params.id;
+    db.run('DELETE FROM offers WHERE id = ?', [offerId], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true });
+    });
+});
+
+// 8. Cancel Order
+app.post('/api/orders/:id/cancel', (req, res) => {
+    const orderId = req.params.id;
+    // Only allow cancelling if status is Processing
+    db.get('SELECT status FROM orders WHERE orderId = ?', [orderId], (err, order) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (!order) return res.status(404).json({ error: 'Order not found' });
+        
+        if (order.status !== 'Processing') {
+            return res.status(400).json({ error: 'Only processing orders can be cancelled' });
+        }
+        
+        db.run('UPDATE orders SET status = ? WHERE orderId = ?', ['Cancelled', orderId], function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true, message: 'Order cancelled successfully' });
+        });
+    });
+});
+
 // Start the server
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
+});
+
+app.delete('/api/products/:id', (req, res) => {
+    const productId = req.params.id;
+
+    db.run('DELETE FROM products WHERE id = ?', [productId], function (err) {
+        if (err) {
+            console.error(err);
+            return res.status(500).json({ error: 'Failed to delete product' });
+        }
+
+        res.json({ success: true });
+    });
+});
+
+// 9. Wishlist
+app.get('/api/user/:id/wishlist', (req, res) => {
+    const userId = req.params.id;
+    db.all('SELECT * FROM wishlist WHERE userId = ? ORDER BY createdAt DESC', [userId], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true, wishlist: rows });
+    });
+});
+
+app.post('/api/user/:id/wishlist', (req, res) => {
+    const userId = req.params.id;
+    const { productTitle, productPrice, productImage } = req.body;
+    db.run('INSERT INTO wishlist (userId, productTitle, productPrice, productImage) VALUES (?, ?, ?, ?)', 
+        [userId, productTitle, productPrice, productImage], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true, id: this.lastID });
+    });
+});
+
+app.delete('/api/user/:id/wishlist/:wishlistId', (req, res) => {
+    const { id, wishlistId } = req.params;
+    db.run('DELETE FROM wishlist WHERE id = ? AND userId = ?', [wishlistId, id], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true });
+    });
 });

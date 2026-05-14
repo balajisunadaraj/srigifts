@@ -1,6 +1,12 @@
 document.addEventListener("DOMContentLoaded", () => {
     let cartItems = [];
+    try {
+        const storedCart = localStorage.getItem('sri_cart');
+        if (storedCart) cartItems = JSON.parse(storedCart);
+    } catch(e) {}
+    
     const cartCountElement = document.querySelector('.cart-count');
+    if (cartCountElement) cartCountElement.textContent = cartItems.length;
 
     // Auth State Handling
     const sessionId = localStorage.getItem('sri_session_id');
@@ -21,7 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!document.getElementById('product-modal')) {
         const modalHtml = `
             <div class="modal-overlay" id="product-modal">
-                <div class="modal-content">
+                <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
                     <span class="modal-close" id="modal-close">&times;</span>
                     <div class="modal-img">
                         <img id="modal-image" src="" alt="Product">
@@ -30,27 +36,10 @@ document.addEventListener("DOMContentLoaded", () => {
                         <h2 id="modal-title">Product Title</h2>
                         <h3 class="product-price" id="modal-price">₹0</h3>
                         <p class="modal-desc" id="modal-desc">Product description goes here.</p>
-                        <div style="display: flex; gap: 1rem; margin-bottom: 2rem;">
-                            <button class="btn btn-primary add-to-cart-btn" id="modal-add-to-cart" style="flex: 1;">Add to Cart</button>
-                            <button class="btn btn-primary" id="modal-proceed-checkout" style="flex: 1; background: #25D366; border-color: #25D366;">Proceed to Checkout</button>
-                        </div>
-                        <div id="reviews-section" style="border-top: 1px solid #eaeaea; padding-top: 1.5rem;">
-                            <h3>Customer Reviews</h3>
-                            <div id="reviews-list" style="margin-bottom: 1.5rem; max-height: 200px; overflow-y: auto;">
-                                <p style="color: var(--text-light);">Loading reviews...</p>
-                            </div>
-                            <form id="add-review-form" style="display: flex; flex-direction: column; gap: 0.5rem;">
-                                <h4 style="margin:0;">Write a Review</h4>
-                                <select id="review-rating" required style="padding: 0.5rem; border-radius: 4px; border: 1px solid #ccc;">
-                                    <option value="5">⭐⭐⭐⭐⭐ - Excellent</option>
-                                    <option value="4">⭐⭐⭐⭐ - Good</option>
-                                    <option value="3">⭐⭐⭐ - Average</option>
-                                    <option value="2">⭐⭐ - Poor</option>
-                                    <option value="1">⭐ - Terrible</option>
-                                </select>
-                                <textarea id="review-comment" rows="2" placeholder="Your review..." required style="padding: 0.5rem; border-radius: 4px; border: 1px solid #ccc; font-family: inherit;"></textarea>
-                                <button type="submit" class="btn btn-primary" style="padding: 0.5rem;">Submit Review</button>
-                            </form>
+                        <div style="display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap;">
+                            <button class="btn btn-primary add-to-cart-btn" id="modal-add-to-cart" style="flex: 1; min-width: 140px;">Add to Cart</button>
+                            <button class="btn btn-primary" id="modal-proceed-checkout" style="flex: 1; background: #25D366; border-color: #25D366; min-width: 180px;">Proceed to Checkout</button>
+                            <button class="btn btn-primary" id="modal-add-wishlist" style="flex: 1; background: #ff4757; border-color: #ff4757; min-width: 140px;">❤️ Wishlist</button>
                         </div>
                     </div>
                 </div>
@@ -59,20 +48,29 @@ document.addEventListener("DOMContentLoaded", () => {
         document.body.insertAdjacentHTML('beforeend', modalHtml);
     }
 
+
     const modalOverlay = document.getElementById('product-modal');
     const modalClose = document.getElementById('modal-close');
     const modalAddToCart = document.getElementById('modal-add-to-cart');
 
     // DYNAMIC RENDERING FROM API
     let products = [];
+    let offers = [];
 
     async function loadProducts() {
         try {
-            const res = await fetch('/api/products');
-            products = await res.json();
+            const [resProd, resOff] = await Promise.all([
+                fetch('/api/products'),
+                fetch('/api/offers')
+            ]);
+            products = await resProd.json();
+            const offersData = await resOff.json();
+            if (offersData.success) {
+                offers = offersData.offers;
+            }
             renderAllProducts();
         } catch (error) {
-            console.error('Error fetching products:', error);
+            console.error('Error fetching data:', error);
             renderAllProducts();
         }
     }
@@ -83,13 +81,34 @@ document.addEventListener("DOMContentLoaded", () => {
         const overlayHtml = inStock ? '' : '<div style="position: absolute; top: 10px; left: 10px; background: red; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; z-index: 10;">Out of Stock</div>';
         const imgOpacity = inStock ? '1' : '0.5';
 
+        // Check for active offer
+        let offerBadgeHtml = '';
+        let displayPriceHtml = `<p class="product-price">₹${product.price}</p>`;
+        let finalPrice = product.price;
+
+        const activeOffer = offers.find(o => o.category === 'All' || o.category === product.category);
+        if (activeOffer) {
+            let badgeContent = `${activeOffer.title}<br><span style="font-weight: normal; font-size: 0.65rem;">${activeOffer.message}</span>`;
+            
+            if (activeOffer.discount && activeOffer.discount > 0) {
+                finalPrice = product.price - (product.price * (activeOffer.discount / 100));
+                finalPrice = Math.round(finalPrice);
+                badgeContent += `<br><span style="background: white; color: #d4af37; padding: 2px 4px; border-radius: 2px; font-size: 0.7rem; font-weight: bold; margin-top: 4px; display: inline-block;">${activeOffer.discount}% OFF</span>`;
+                
+                displayPriceHtml = `<p class="product-price"><span style="text-decoration: line-through; color: #999; font-size: 0.9rem; margin-right: 8px;">₹${product.price}</span>₹${finalPrice}</p>`;
+            }
+            
+            offerBadgeHtml = `<div style="position: absolute; top: 10px; right: 10px; background: #d4af37; color: #111; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.75rem; z-index: 10; max-width: 150px; text-align: right; box-shadow: 0 2px 4px rgba(0,0,0,0.2); line-height: 1.2;">${badgeContent}</div>`;
+        }
+
         return `
-            <div class="product-card" data-title="${product.title}" data-desc="${product.description}" data-price="₹${product.price}" data-img="${product.image}" data-instock="${inStock ? '1' : '0'}" style="position: relative;">
+            <div class="product-card" data-title="${product.title}" data-desc="${product.description}" data-price="₹${finalPrice}" data-original-price="${product.price}" data-img="${product.image}" data-instock="${inStock ? '1' : '0'}" data-discount="${activeOffer && activeOffer.discount ? activeOffer.discount : 0}" style="position: relative;">
                 ${overlayHtml}
+                ${offerBadgeHtml}
                 <div class="product-img-wrap" style="opacity: ${imgOpacity};"><img src="${product.image}" alt="${product.title}"></div>
                 <div class="product-info">
                     <h3 class="product-title">${product.title}</h3>
-                    <p class="product-price">₹${product.price}</p>
+                    ${displayPriceHtml}
                 </div>
             </div>
         `;
@@ -167,7 +186,10 @@ document.addEventListener("DOMContentLoaded", () => {
             const title = card.getAttribute('data-title');
             const desc = card.getAttribute('data-desc');
             const priceStr = card.getAttribute('data-price');
+            const originalPriceStr = card.getAttribute('data-original-price');
+            const discount = parseInt(card.getAttribute('data-discount')) || 0;
             const price = parseFloat(priceStr.replace('₹', ''));
+            const originalPrice = originalPriceStr ? parseFloat(originalPriceStr) : price;
             const imgSrc = card.getAttribute('data-img');
             const inStock = card.getAttribute('data-instock') === '1';
 
@@ -175,7 +197,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 currentSelectedProduct = { title, price, image: imgSrc };
                 document.getElementById('modal-title').textContent = title;
                 document.getElementById('modal-desc').textContent = desc || 'Beautifully crafted premium gift.';
-                document.getElementById('modal-price').textContent = '₹' + price;
+                
+                if (discount > 0) {
+                    document.getElementById('modal-price').innerHTML = `<span style="text-decoration: line-through; color: #999; font-size: 1rem; margin-right: 10px;">₹${originalPrice}</span>₹${price} <span style="font-size: 0.9rem; color: #d4af37; margin-left: 10px;">(${discount}% OFF)</span>`;
+                } else {
+                    document.getElementById('modal-price').textContent = '₹' + price;
+                }
+                
                 document.getElementById('modal-image').src = imgSrc;
 
                 const proceedBtn = document.getElementById('modal-proceed-checkout');
@@ -193,26 +221,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 modalOverlay.classList.add('active');
 
-                // Fetch reviews
-                const reviewsList = document.getElementById('reviews-list');
-                reviewsList.innerHTML = '<p style="color: var(--text-light);">Loading reviews...</p>';
-                fetch('/api/reviews/' + encodeURIComponent(title))
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.length === 0) {
-                            reviewsList.innerHTML = '<p style="color: var(--text-light);">No reviews yet. Be the first to review!</p>';
-                        } else {
-                            reviewsList.innerHTML = data.map(r => `
-                                <div style="margin-bottom: 1rem; border-bottom: 1px solid #eee; padding-bottom: 0.5rem;">
-                                    <div style="font-weight: bold;">${r.userName || 'Guest'} <span style="color: #f39c12;">${'⭐'.repeat(r.rating)}</span></div>
-                                    <div style="color: #555; font-size: 0.95rem; margin-top: 0.2rem;">${r.comment}</div>
-                                </div>
-                            `).join('');
-                        }
-                    })
-                    .catch(() => {
-                        reviewsList.innerHTML = '<p style="color: red;">Failed to load reviews.</p>';
-                    });
+                // Wishlist checks or other dynamic updates can go here
             }
         }
     });
@@ -235,6 +244,7 @@ document.addEventListener("DOMContentLoaded", () => {
         modalAddToCart.addEventListener('click', () => {
             if (currentSelectedProduct) {
                 cartItems.push(currentSelectedProduct);
+                localStorage.setItem('sri_cart', JSON.stringify(cartItems));
                 if (cartCountElement) cartCountElement.textContent = cartItems.length;
 
                 // Button animation
@@ -256,6 +266,7 @@ document.addEventListener("DOMContentLoaded", () => {
         modalProceedCheckout.addEventListener('click', () => {
             if (currentSelectedProduct) {
                 cartItems.push(currentSelectedProduct);
+                localStorage.setItem('sri_cart', JSON.stringify(cartItems));
                 if (cartCountElement) cartCountElement.textContent = cartItems.length;
                 modalOverlay.classList.remove('active');
                 const floatingCartBtn = document.querySelector('.floating-cart');
@@ -264,37 +275,30 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    const addReviewForm = document.getElementById('add-review-form');
-    if (addReviewForm) {
-        addReviewForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
+    const modalAddWishlist = document.getElementById('modal-add-wishlist');
+    if (modalAddWishlist) {
+        modalAddWishlist.addEventListener('click', async () => {
             if (!currentSelectedProduct) return;
-            const rating = parseInt(document.getElementById('review-rating').value);
-            const comment = document.getElementById('review-comment').value;
-            const userName = currentUser && currentUser.name ? currentUser.name : 'Guest Customer';
-            const userId = currentUser ? currentUser.id : null;
+            if (!currentUser) return alert('Please login to add to wishlist.');
 
             try {
-                const res = await fetch('/api/reviews', {
+                const res = await fetch('/api/user/' + currentUser.id + '/wishlist', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ productTitle: currentSelectedProduct.title, userId, userName, rating, comment })
+                    body: JSON.stringify({
+                        productTitle: currentSelectedProduct.title,
+                        productPrice: currentSelectedProduct.price,
+                        productImage: currentSelectedProduct.image
+                    })
                 });
                 if (res.ok) {
-                    const reviewSection = document.getElementById('reviews-list');
-                    if (reviewSection.innerHTML.includes('No reviews yet')) reviewSection.innerHTML = '';
-                    reviewSection.insertAdjacentHTML('afterbegin', `
-                        <div style="margin-bottom: 1rem; border-bottom: 1px solid #eee; padding-bottom: 0.5rem;">
-                            <div style="font-weight: bold;">${userName} <span style="color: #f39c12;">${'⭐'.repeat(rating)}</span></div>
-                            <div style="color: #555; font-size: 0.95rem; margin-top: 0.2rem;">${comment}</div>
-                        </div>
-                    `);
-                    addReviewForm.reset();
+                    alert('Added to your Wishlist!');
+                    modalOverlay.classList.remove('active');
                 } else {
-                    alert('Failed to submit review');
+                    alert('Failed to add to wishlist');
                 }
             } catch (err) {
-                alert('Error submitting review');
+                alert('Error adding to wishlist');
             }
         });
     }
@@ -360,7 +364,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         <div style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem; font-size: 1.1rem;">
                             <label style="cursor: pointer; display: flex; align-items: center; gap: 0.8rem;">
                                 <input type="radio" name="payment" value="UPI" checked style="transform: scale(1.2);"> 
-                                <div style="line-height: 1.4;">UPI (GooglePay, PhonePe) <br><span style="font-size: 0.95rem; color: #555;">Send payment to: <strong>9080125879</strong></span></div>
+                                <div style="line-height: 1.4;">UPI (GooglePay, PhonePe)</div>
                             </label>
                             <label style="cursor: pointer; display: flex; align-items: center; gap: 0.8rem;">
                                 <input type="radio" name="payment" value="Card" style="transform: scale(1.2);"> 
@@ -381,15 +385,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
             <!-- UPI QR Modal -->
             <div class="modal-overlay" id="qr-modal">
-                <div class="modal-content" style="max-width: 400px; text-align: center; flex-direction: column; padding: 2rem;">
-                    <h2 style="margin-bottom: 1rem;">Scan to Pay via UPI</h2>
-                    <p style="margin-bottom: 1rem; color: var(--text-light);">Order placed! Scan using PhonePe, GooglePay, Paytm, etc. to complete your payment.</p>
-                    <div id="qr-code-container" style="margin-bottom: 1.5rem;">
-                        <img id="qr-code-img" src="qr-code.jpg" alt="Replace this with your actual QR code image (qr-code.jpg)" style="width: 250px; height: 250px; border: 1px solid #eee; border-radius: 8px;">
-                        <p style="font-size: 0.85rem; color: #888; margin-top: 0.5rem;">(Please place your actual PhonePe QR image as 'qr-code.jpg' in the folder)</p>
+                <div class="modal-content" style="max-width: 350px; text-align: center; flex-direction: column; padding: 1.5rem;">
+                    <h2 style="margin-bottom: 0.5rem; font-size: 1.5rem;">Scan to Pay</h2>
+                    <div id="qr-code-container" style="margin-bottom: 1rem; min-height: 180px; display: flex; justify-content: center; align-items: center; flex-direction: column;">
+                        <img id="qr-code-img" src="" alt="Scan to Pay QR Code" style="width: 180px; height: 180px; border: 1px solid #eee; border-radius: 8px; display: none;">
+                        <div id="qr-loading" style="color: var(--text-light); font-size: 0.9rem;">Generating QR code...</div>
                     </div>
-                    <p style="margin-bottom: 1.5rem; font-weight: bold; font-size: 1.2rem;">Amount: <span id="qr-amount">₹0</span></p>
-                    <button class="btn" style="width: 100%; font-size: 1.1rem; border: 1px solid var(--border-color);" id="qr-close-btn">Close</button>
+                    <p style="margin-bottom: 1rem; font-weight: bold; font-size: 1.2rem; color: var(--accent-color);">Amount: <span id="qr-amount">₹0</span></p>
+                    
+                    <div style="margin-bottom: 1rem; text-align: left;">
+                        <label style="font-size: 0.85rem; color: #333; display: block; margin-bottom: 0.3rem; font-weight: bold;">Enter 12-digit UTR / Ref No.</label>
+                        <input type="text" id="upi-utr" placeholder="12-digit number" style="width: 100%; padding: 0.6rem; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 0.9rem;" required minlength="12" maxlength="12">
+                    </div>
+
+                    <div style="background: #fff3f3; border: 1px solid #ffcccc; padding: 0.5rem; border-radius: 6px; margin-bottom: 1rem; text-align: left;">
+                        <p style="color: #cc0000; font-size: 0.75rem; margin: 0; line-height: 1.3;">
+                            ⚠️ <strong style="color: #aa0000;">Warning:</strong> Fake UTRs will result in permanent ban and order cancellation.
+                        </p>
+                    </div>
+
+                    <button class="btn btn-primary" style="width: 100%; font-size: 1rem; padding: 0.8rem; background: #25D366; border-color: #25D366;" id="qr-verify-btn">Verify & Place Order</button>
                 </div>
             </div>
         `;
@@ -471,13 +486,15 @@ document.addEventListener("DOMContentLoaded", () => {
         const method = document.querySelector('input[name="payment"]:checked').value;
         const total = parseFloat(document.getElementById('cart-total-display').getAttribute('data-total'));
 
-        async function processOrder(payMethod, payTotal) {
+        async function processOrder(payMethod, payTotal, utrNumber = null) {
             const originalText = document.getElementById('checkout-btn').textContent;
             document.getElementById('checkout-btn').textContent = `Processing via ${payMethod}...`;
 
             setTimeout(async () => {
                 const orderId = 'SG-' + Math.floor(100000 + Math.random() * 900000);
                 const itemTitles = cartItems.map(item => item.title);
+                
+                let orderMsg = `Order received with ${cartItems.length} items (${itemTitles.join(', ')}). Paid via ${payMethod}.`;
 
                 try {
                     await fetch('/api/orders', {
@@ -486,14 +503,15 @@ document.addEventListener("DOMContentLoaded", () => {
                         body: JSON.stringify({
                             orderId: orderId,
                             status: 'Processing',
-                            message: `Order received with ${cartItems.length} items (${itemTitles.join(', ')}). Paid via ${payMethod}.`,
+                            message: orderMsg,
                             total: payTotal,
                             items: cartItems,
                             customerName: name,
                             address: address,
                             city: city,
                             pincode: pincode,
-                            userId: currentUser ? currentUser.id : null
+                            userId: currentUser ? currentUser.id : null,
+                            paymentRef: utrNumber
                         })
                     });
 
@@ -509,16 +527,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     cartItems = [];
                     if (cartCountElement) cartCountElement.textContent = cartItems.length;
                     cartOverlay.classList.remove('active');
-                    
-                    if (payMethod === 'UPI') {
-                        document.getElementById('qr-amount').textContent = '₹' + payTotal;
-                        qrModal.classList.add('active');
-                        document.getElementById('qr-close-btn').onclick = () => {
-                            qrModal.classList.remove('active');
-                        };
-                    }
+                    if (qrModal) qrModal.classList.remove('active');
                     
                     document.getElementById('checkout-btn').textContent = originalText;
+                    
+                    if (currentUser && utrNumber) {
+                        window.location.href = 'account.html';
+                    }
                 } catch (error) {
                     alert('Error placing order. Please try again.');
                     document.getElementById('checkout-btn').textContent = originalText;
@@ -526,6 +541,60 @@ document.addEventListener("DOMContentLoaded", () => {
             }, 800);
         }
 
-        processOrder(method, total);
+        if (method === 'UPI') {
+            document.getElementById('qr-amount').textContent = '₹' + total;
+            document.getElementById('upi-utr').value = ''; // Reset input
+            
+            // Generate dynamic UPI QR Code
+            const upiString = `upi://pay?pa=balajisundar2296@okaxis&pn=Balaji&am=${total}&cu=INR`;
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(upiString)}`;
+            
+            const qrImg = document.getElementById('qr-code-img');
+            const qrLoading = document.getElementById('qr-loading');
+            
+            qrImg.style.display = 'none';
+            if (qrLoading) qrLoading.style.display = 'block';
+            
+            qrImg.onload = () => {
+                if (qrLoading) qrLoading.style.display = 'none';
+                qrImg.style.display = 'block';
+            };
+            qrImg.src = qrUrl;
+
+            qrModal.classList.add('active');
+            
+            document.getElementById('qr-verify-btn').onclick = () => {
+                const utr = document.getElementById('upi-utr').value.trim();
+                if (utr.length < 12) {
+                    alert('Please enter a valid 12-digit UTR or Reference Number from your payment app.');
+                    return;
+                }
+                
+                document.getElementById('qr-verify-btn').textContent = 'Verifying...';
+                processOrder('UPI', total, utr);
+            };
+        } else {
+            processOrder(method, total);
+        }
     });
 });
+
+async function deleteProduct(id) {
+    const confirmDelete = confirm("Are you sure you want to delete this product?");
+    if (!confirmDelete) return;
+
+    try {
+        const res = await fetch('/api/products/' + id, {
+            method: 'DELETE'
+        });
+
+        if (res.ok) {
+            alert('Product deleted successfully');
+            fetchAdminProducts(); // refresh table
+        } else {
+            alert('Failed to delete product');
+        }
+    } catch (error) {
+        alert('Error deleting product');
+    }
+}

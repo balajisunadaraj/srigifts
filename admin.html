@@ -197,6 +197,7 @@
                             <option value="Shipped">Shipped</option>
                             <option value="Out for Delivery">Out for Delivery</option>
                             <option value="Delivered">Delivered</option>
+                            <option value="Cancelled">Cancelled</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -212,10 +213,67 @@
         </div>
 
         <div class="dashboard-card" style="margin-top: 2rem;">
+            <h3>Offers Management</h3>
+            <p style="color: var(--text-light); margin-bottom: 1rem;">Schedule offers and sales on specific days.</p>
+            <form id="add-offer-form">
+                <div class="form-group">
+                    <label>Offer Title</label>
+                    <input type="text" id="o-title" required placeholder="e.g. Diwali Sale">
+                </div>
+                <div class="form-group">
+                    <label>Offer Message</label>
+                    <textarea id="o-message" rows="2" required placeholder="e.g. Get 20% off on all personalized gifts!"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Offer Date</label>
+                    <input type="date" id="o-date" required>
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <select id="o-category">
+                        <option value="All">All Products</option>
+                        <option value="Personalized">Personalized Gifts</option>
+                        <option value="Keychains">Keychains</option>
+                        <option value="3D Printed">3D Printed</option>
+                        <option value="Frames">Frames</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Discount Percentage (%)</label>
+                    <input type="number" id="o-discount" min="0" max="100" required placeholder="e.g. 20">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Create Offer</button>
+                <p id="offer-success" style="color: #25D366; display:none; margin-top:1rem; font-weight: 600;">Offer scheduled successfully!</p>
+            </form>
+            <br>
+            <h4>Scheduled Offers</h4>
+            <div style="overflow-x: auto; max-height: 400px; overflow-y: auto; border-bottom: 1px solid var(--border-color);">
+                <table class="admin-table" id="offers-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Title</th>
+                            <th>Message</th>
+                            <th>Category</th>
+                            <th>Discount</th>
+                            <th>Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="offers-tbody">
+                        <tr>
+                            <td colspan="7" style="text-align:center;">Loading offers...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="dashboard-card" style="margin-top: 2rem;">
             <h3>All Customer Orders</h3>
             <p style="color: var(--text-light); margin-bottom: 1rem;">Click on any order to populate the update form
                 above.</p>
-            <div style="overflow-x: auto;">
+            <div style="overflow-x: auto; max-height: 500px; overflow-y: auto; border-bottom: 1px solid var(--border-color);">
                 <table class="admin-table" id="orders-table">
                     <thead>
                         <tr>
@@ -224,12 +282,14 @@
                             <th>Address</th>
                             <th>Items</th>
                             <th>Total</th>
+                            <th>Payment UTR</th>
                             <th>Status</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody id="orders-tbody">
                         <tr>
-                            <td colspan="6" style="text-align:center;">Loading orders...</td>
+                            <td colspan="8" style="text-align:center;">Loading orders...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -238,8 +298,9 @@
 
         <div class="dashboard-card" style="margin-top: 2rem;">
             <h3>Manage Products</h3>
-            <p style="color: var(--text-light); margin-bottom: 1rem;">Toggle stock status to mark products as Unavailable/Available.</p>
-            <div style="overflow-x: auto;">
+            <p style="color: var(--text-light); margin-bottom: 1rem;">Toggle stock status to mark products as
+                Unavailable/Available.</p>
+            <div style="overflow-x: auto; max-height: 500px; overflow-y: auto; border-bottom: 1px solid var(--border-color);">
                 <table class="admin-table" id="products-table">
                     <thead>
                         <tr>
@@ -297,6 +358,7 @@
                     document.getElementById('login-overlay').style.display = 'none';
                     fetchOrders();
                     fetchAdminProducts();
+                    fetchOffers();
                 } else {
                     document.getElementById('login-error').style.display = 'block';
                 }
@@ -351,10 +413,20 @@
         document.getElementById('update-order-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const orderId = document.getElementById('o-id').value.trim();
+            const status = document.getElementById('o-status').value;
+            let message = document.getElementById('o-msg').value;
+
+            if (status === 'Cancelled') {
+                const reason = prompt('Please enter the reason for cancelling this order (this will be shown to the user):');
+                if (reason === null) return; // Admin cancelled the prompt
+                message = reason ? `Your order was cancelled. Reason: ${reason}` : 'Your order has been cancelled.';
+                document.getElementById('o-msg').value = message;
+            }
+
             const order = {
                 orderId: orderId,
-                status: document.getElementById('o-status').value,
-                message: document.getElementById('o-msg').value
+                status: status,
+                message: message
             };
 
             try {
@@ -396,26 +468,68 @@
 
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td>${order.orderId}</td>
-                        <td>${order.customerName || 'N/A'}</td>
-                        <td>${order.address ? order.address + ', ' + order.city + ' - ' + order.pincode : 'N/A'}</td>
-                        <td>${itemsStr || 'See Message'}</td>
-                        <td>₹${order.total || 0}</td>
-                        <td><span style="color: ${order.status === 'Delivered' ? '#25D366' : 'var(--accent-color)'}; font-weight: bold;">${order.status}</span></td>
+                        <td onclick="populateOrder('${order.orderId}', '${order.status}', '${(order.message || '').replace(/'/g, "\\'")}')">${order.orderId}</td>
+                        <td onclick="populateOrder('${order.orderId}', '${order.status}', '${(order.message || '').replace(/'/g, "\\'")}')">${order.customerName || 'N/A'}</td>
+                        <td onclick="populateOrder('${order.orderId}', '${order.status}', '${(order.message || '').replace(/'/g, "\\'")}')">${order.address ? order.address + ', ' + order.city + ' - ' + order.pincode : 'N/A'}</td>
+                        <td onclick="populateOrder('${order.orderId}', '${order.status}', '${(order.message || '').replace(/'/g, "\\'")}')">${itemsStr || 'See Message'}</td>
+                        <td onclick="populateOrder('${order.orderId}', '${order.status}', '${(order.message || '').replace(/'/g, "\\'")}')">₹${order.total || 0}</td>
+                        <td onclick="populateOrder('${order.orderId}', '${order.status}', '${(order.message || '').replace(/'/g, "\\'")}')"><strong style="color: #444;">${order.paymentRef || '-'}</strong></td>
+                        <td onclick="populateOrder('${order.orderId}', '${order.status}', '${(order.message || '').replace(/'/g, "\\'")}')"><span style="color: ${order.status === 'Delivered' ? '#25D366' : order.status === 'Cancelled' ? 'red' : 'var(--accent-color)'}; font-weight: bold;">${order.status}</span></td>
+                        <td>
+                            ${order.status !== 'Cancelled' ? `<button class="btn" style="background: #ff9800; color: white; border: none; padding: 0.4rem 0.8rem; font-size:0.9rem; cursor:pointer; width: 100%;" onclick="cancelOrderPrompt('${order.orderId}')">Cancel</button>` : '<span style="color:var(--text-light); font-size: 0.9rem;">No action</span>'}
+                        </td>
                     `;
                     tr.style.cursor = 'pointer';
                     tr.title = 'Click to populate update form';
-                    tr.addEventListener('click', () => {
-                        document.getElementById('o-id').value = order.orderId;
-                        document.getElementById('o-status').value = order.status;
-                        document.getElementById('o-msg').value = order.message || '';
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                    });
                     tbody.appendChild(tr);
                 });
             } catch (error) {
                 console.error('Error fetching orders:', error);
-                document.getElementById('orders-tbody').innerHTML = '<tr><td colspan="6" style="text-align:center; color:red;">Error loading orders.</td></tr>';
+                document.getElementById('orders-tbody').innerHTML = '<tr><td colspan="8" style="text-align:center; color:red;">Error loading orders.</td></tr>';
+            }
+        }
+
+        function populateOrder(orderId, status, message) {
+            document.getElementById('o-id').value = orderId;
+            document.getElementById('o-status').value = status;
+            document.getElementById('o-msg').value = message || '';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        async function cancelOrderPrompt(orderId) {
+            const reason = prompt('Please enter the reason for cancelling this order (this will be shown to the user):');
+            if (reason === null) return;
+            
+            const message = reason ? `Your order was cancelled. Reason: ${reason}` : 'Your order has been cancelled.';
+            
+            try {
+                const res = await fetch('/api/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        orderId: orderId,
+                        status: 'Cancelled',
+                        message: message
+                    })
+                });
+                if (res.ok) {
+                    alert('Order cancelled successfully.');
+                    fetchOrders();
+                } else {
+                    alert('Failed to cancel order.');
+                }
+            } catch (e) {
+                alert('Error cancelling order.');
+            }
+        }
+
+        async function deleteOrder(id) {
+            if(!confirm('Are you sure you want to permanently delete this order?')) return;
+            try {
+                const res = await fetch('/api/orders/' + id, { method: 'DELETE' });
+                if(res.ok) fetchOrders();
+            } catch(e) {
+                alert('Error deleting order');
             }
         }
 
@@ -441,7 +555,19 @@
                         <td>${product.category}</td>
                         <td>₹${product.price}</td>
                         <td><span style="font-weight:bold; color: ${inStock ? '#25D366' : 'red'};">${inStock ? 'In Stock' : 'Out of Stock'}</span></td>
-                        <td><button class="btn btn-primary" style="background: ${inStock ? 'red' : '#25D366'}; border: none; padding: 0.4rem 0.8rem; font-size:0.9rem; cursor:pointer;" onclick="toggleStock(${product.id}, ${inStock ? 0 : 1})">${inStock ? 'Mark Unavailable' : 'Mark Available'}</button></td>
+                        <td>
+                            <button class="btn btn-primary"
+                               style="background: ${inStock ? 'red' : '#25D366'}; border: none; padding: 0.4rem 0.8rem; font-size:0.9rem; cursor:pointer; margin-bottom:5px;" 
+                               onclick="toggleStock(${product.id}, ${inStock ? 0 : 1})">
+                               ${inStock ? 'Mark Unavailable' : 'Mark Available'}
+                            </button>
+                            <br>
+                            <button class="btn" 
+                               style="background: black; color: white; border: none; padding: 0.4rem 0.8rem; font-size:0.9rem; cursor:pointer;" 
+                               onclick="deleteProduct(${product.id})">
+                               Remove
+                            </button>
+                        </td>
                     `;
                     tbody.appendChild(tr);
                 });
@@ -457,13 +583,96 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ inStock: newStatus })
                 });
-                if(res.ok) {
+                if (res.ok) {
                     fetchAdminProducts();
                 } else {
                     alert('Failed to update stock');
                 }
             } catch (e) {
                 alert('Error updating stock');
+            }
+        }
+        
+        async function deleteProduct(id) {
+            if(!confirm('Are you sure you want to delete this product?')) return;
+            try {
+                const res = await fetch('/api/products/' + id, { method: 'DELETE' });
+                if(res.ok) fetchAdminProducts();
+            } catch(e) {
+                alert('Error deleting product');
+            }
+        }
+
+        // Offers Management
+        document.getElementById('add-offer-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const offer = {
+                title: document.getElementById('o-title').value,
+                message: document.getElementById('o-message').value,
+                offerDate: document.getElementById('o-date').value,
+                category: document.getElementById('o-category').value,
+                discount: parseInt(document.getElementById('o-discount').value) || 0
+            };
+
+            try {
+                const res = await fetch('/api/offers', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(offer)
+                });
+                
+                if (res.ok) {
+                    document.getElementById('offer-success').style.display = 'block';
+                    e.target.reset();
+                    fetchOffers();
+                    setTimeout(() => document.getElementById('offer-success').style.display = 'none', 3000);
+                } else {
+                    alert('Failed to schedule offer');
+                }
+            } catch (error) {
+                alert('Error connecting to server');
+            }
+        });
+
+        async function fetchOffers() {
+            try {
+                const res = await fetch('/api/offers');
+                const data = await res.json();
+                const tbody = document.getElementById('offers-tbody');
+                tbody.innerHTML = '';
+
+                if (!data.success || data.offers.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No offers scheduled.</td></tr>';
+                    return;
+                }
+
+                data.offers.forEach(offer => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${offer.id}</td>
+                        <td>${offer.title}</td>
+                        <td>${offer.message}</td>
+                        <td>${offer.category || 'All'}</td>
+                        <td>${offer.discount || 0}%</td>
+                        <td>${offer.offerDate}</td>
+                        <td>
+                            <button class="btn" style="background: red; color: white; border: none; padding: 0.4rem 0.8rem; cursor:pointer;" onclick="deleteOffer(${offer.id})">Delete</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (error) {
+                document.getElementById('offers-tbody').innerHTML = '<tr><td colspan="7" style="text-align:center; color:red;">Error loading offers.</td></tr>';
+            }
+        }
+
+        async function deleteOffer(id) {
+            if(!confirm('Are you sure you want to delete this offer?')) return;
+            try {
+                const res = await fetch('/api/offers/' + id, { method: 'DELETE' });
+                if(res.ok) fetchOffers();
+            } catch(e) {
+                alert('Error deleting offer');
             }
         }
     </script>

@@ -20,6 +20,8 @@
             border-radius: 12px;
             border: 1px solid var(--border-color);
             transition: var(--transition);
+            display: flex;
+            flex-direction: column;
         }
 
         .review-card:hover {
@@ -36,8 +38,17 @@
 
         .reviewer {
             font-weight: 600;
-            margin-top: 1.5rem;
+            margin-top: auto;
+            padding-top: 1.5rem;
             color: var(--primary-color);
+        }
+        
+        .review-photo {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-top: 1.5rem;
         }
     </style>
 </head>
@@ -67,38 +78,8 @@
     <!-- Reviews Section -->
     <section class="container" style="padding-top: 2rem; min-height: 50vh;">
 
-        <div class="review-grid">
-            <!-- Review 1: Photo Frames -->
-            <div class="review-card">
-                <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-                <p>"The minimalist black photo frame I ordered was purely exquisite. The build quality and the finish
-                    added an immense glow to my living room memory wall. Exceptional service from the SRI GIFTS team."
-                </p>
-                <div class="reviewer">- Anjali S. (Photo Frames)</div>
-            </div>
-
-            <!-- Review 2: Keychains -->
-            <div class="review-card">
-                <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-                <p>"I ordered a customized leather and metal keychain as an anniversary gift. The engraving was
-                    incredibly sharp, clean, and elegant. It looks and feels highly premium. Highly recommended!"</p>
-                <div class="reviewer">- Rajesh M. (Keychains)</div>
-            </div>
-
-            <!-- Review 3: Overall Services -->
-            <div class="review-card">
-                <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-                <p>"SRI GIFTS is now my go-to place for all gifting needs. The packaging was stunning, tracking the
-                    order was seamless, and the overall customer experience is truly luxury tier."</p>
-                <div class="reviewer">- Sarah V. (Overall Service)</div>
-            </div>
-
-            <div class="review-card">
-                <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-                <p>"Bought the premium wooden box to store jewelry. The scent of the wood and the custom carved lid
-                    makes it priceless. Will be coming back for more 3D decor very soon!"</p>
-                <div class="reviewer">- Michael B. (Personalized Gifts)</div>
-            </div>
+        <div class="review-grid" id="all-reviews-grid">
+            <p style="text-align: center; color: var(--text-light); grid-column: 1/-1;">Loading reviews...</p>
         </div>
     </section>
 
@@ -135,6 +116,39 @@
     </footer>
 
     <script src="script.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", async () => {
+            const grid = document.getElementById('all-reviews-grid');
+            try {
+                const res = await fetch('/api/reviews');
+                const data = await res.json();
+                
+                if (data.success && data.reviews.length > 0) {
+                    grid.innerHTML = '';
+                    data.reviews.forEach(r => {
+                        let photoHtml = '';
+                        if (r.photo) {
+                            photoHtml = `<img src="${r.photo}" class="review-photo" alt="Review Photo">`;
+                        }
+                        
+                        grid.insertAdjacentHTML('beforeend', `
+                            <div class="review-card">
+                                <div class="stars">${'&#9733;'.repeat(r.rating)}</div>
+                                <p>"${r.comment}"</p>
+                                ${photoHtml}
+                                <div class="reviewer">- ${r.userName} (${r.productTitle})</div>
+                            </div>
+                        `);
+                    });
+                } else {
+                    grid.innerHTML = '<p style="text-align: center; color: var(--text-light); grid-column: 1/-1;">No reviews available yet.</p>';
+                }
+            } catch (e) {
+                console.error(e);
+                grid.innerHTML = '<p style="text-align: center; color: red; grid-column: 1/-1;">Error loading reviews.</p>';
+            }
+        });
+    </script>
 </body>
 
 </html>
