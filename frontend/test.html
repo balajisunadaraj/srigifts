@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let currentUser = null;
 
     if (sessionId) {
-        fetch('/api/user/session/' + sessionId)
+        fetch('https://srigift-1mrp.onrender.com/api/user/session/' + sessionId)
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
@@ -62,8 +62,8 @@ document.addEventListener("DOMContentLoaded", () => {
     async function loadProducts() {
         try {
             const [resProd, resOff] = await Promise.all([
-                fetch('/api/products'),
-                fetch('/api/offers')
+                fetch('https://srigift-1mrp.onrender.com/api/products'),
+                fetch('https://srigift-1mrp.onrender.com/api/offers')
             ]);
             products = await resProd.json();
             const offersData = await resOff.json();
@@ -284,7 +284,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!currentUser) return alert('Please login to add to wishlist.');
 
             try {
-                const res = await fetch('/api/user/' + currentUser.id + '/wishlist', {
+                const res = await fetch('https://srigift-1mrp.onrender.com/api/user/' + currentUser.id + '/wishlist', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -322,7 +322,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 trackResult.innerHTML = `<p>Loading...</p>`;
 
                 try {
-                    const res = await fetch(`/api/orders/${input}`);
+                    const res = await fetch(`https://srigift-1mrp.onrender.com/api/orders/${input}`);
                     const data = await res.json();
 
                     if (data.success && data.order) {
@@ -554,7 +554,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 let orderMsg = `Order received with ${checkoutItemsList.length} items (${itemTitles.join(', ')}). Paid via ${payMethod}.`;
 
                 try {
-                    await fetch('/api/orders', {
+                    await fetch('https://srigift-1mrp.onrender.com/api/orders', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -644,7 +644,7 @@ async function deleteProduct(id) {
     if (!confirmDelete) return;
 
     try {
-        const res = await fetch('/api/products/' + id, {
+        const res = await fetch('https://srigift-1mrp.onrender.com/api/products/' + id, {
             method: 'DELETE'
         });
 

@@ -62,7 +62,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let currentUser = null;
 
     if (sessionId) {
-        fetch('/api/user/session/' + sessionId)
+        fetch('https://srigift-1mrp.onrender.com/api/user/session/' + sessionId)
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
@@ -166,9 +166,9 @@ document.addEventListener("DOMContentLoaded", () => {
     async function loadProducts() {
         try {
             const [resProd, resOff, resCat] = await Promise.all([
-                fetch('/api/products'),
-                fetch('/api/offers'),
-                fetch('/api/categories').then(r => r.json()).catch(() => ({ success: false }))
+                fetch('https://srigift-1mrp.onrender.com/api/products'),
+                fetch('https://srigift-1mrp.onrender.com/api/offers'),
+                fetch('https://srigift-1mrp.onrender.com/api/categories').then(r => r.json()).catch(() => ({ success: false }))
             ]);
             products = await resProd.json();
             const offersData = await resOff.json();
@@ -274,7 +274,7 @@ document.addEventListener("DOMContentLoaded", () => {
         listContainer.innerHTML = '<p style="color: #888; font-style: italic;">Loading reviews...</p>';
 
         try {
-            const res = await fetch(`/api/reviews/${encodeURIComponent(productTitle)}`);
+            const res = await fetch(`https://srigift-1mrp.onrender.com/api/reviews/${encodeURIComponent(productTitle)}`);
             const reviews = await res.json();
 
             if (reviews && reviews.length > 0) {
@@ -343,7 +343,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             try {
-                const res = await fetch('/api/reviews', {
+                const res = await fetch('https://srigift-1mrp.onrender.com/api/reviews', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -380,7 +380,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const sessionId = localStorage.getItem('sri_session_id');
             if (sessionId) {
                 try {
-                    const sessionRes = await fetch('/api/user/session/' + sessionId);
+                    const sessionRes = await fetch('https://srigift-1mrp.onrender.com/api/user/session/' + sessionId);
                     const sessionData = await sessionRes.json();
                     if (sessionData.success) {
                         currentUser = sessionData.user;
@@ -393,7 +393,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!currentUser) return;
         
         try {
-            const res = await fetch(`/api/user/${currentUser.id}/addresses`);
+            const res = await fetch(`https://srigift-1mrp.onrender.com/api/user/${currentUser.id}/addresses`);
             const data = await res.json();
             
             if (data.success && data.addresses && data.addresses.length > 0) {
@@ -666,7 +666,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!currentUser) return alert('Please login to add to wishlist.');
 
             try {
-                const res = await fetch('/api/user/' + currentUser.id + '/wishlist', {
+                const res = await fetch('https://srigift-1mrp.onrender.com/api/user/' + currentUser.id + '/wishlist', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -704,7 +704,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 trackResult.innerHTML = `<p>Loading...</p>`;
 
                 try {
-                    const res = await fetch(`/api/orders/${input}`);
+                    const res = await fetch(`https://srigift-1mrp.onrender.com/api/orders/${input}`);
                     const data = await res.json();
 
                     if (data.success && data.order) {
@@ -925,7 +925,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 let orderMsg = `Order received with ${checkoutItemsList.length} items (${itemTitles.join(', ')}). Paid via ${payMethod}.`;
 
                 try {
-                    const res = await fetch('/api/orders', {
+                    const res = await fetch('https://srigift-1mrp.onrender.com/api/orders', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -1027,7 +1027,7 @@ async function deleteProduct(id) {
     if (!confirmDelete) return;
 
     try {
-        const res = await fetch('/api/products/' + id, {
+        const res = await fetch('https://srigift-1mrp.onrender.com/api/products/' + id, {
             method: 'DELETE'
         });
 
