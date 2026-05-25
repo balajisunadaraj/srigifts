@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile | SRI GIFTS</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .profile-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 5%;
+        }
+
+        .tabs-container {
+            display: flex;
+            gap: 2rem;
+            max-width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        .tab-buttons {
+            min-width: 250px;
+        }
+
+        .tab-content {
+            flex-grow: 1;
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            padding: 2rem;
+            box-shadow: var(--shadow-sm);
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .user-info p {
+            margin-bottom: 0.8rem;
+            font-size: 1.1rem;
+        }
+
+        .user-info strong {
+            color: var(--primary-color);
+            display: inline-block;
+            width: 120px;
+        }
+
+        .order-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .order-table th,
+        .order-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            text-align: left;
+        }
+
+        .order-table th {
+            background-color: #f9f9f9;
+            font-weight: 600;
+        }
+
+        .status-badge {
+            padding: 0.4rem 0.8rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .status-processing { background: #fff3cd; color: #856404; }
+        .status-shipped { background: #d1ecf1; color: #0c5460; }
+        .status-delivered { background: #d4edda; color: #155724; }
+        .status-cancelled { background: #ffebeb; color: #cc0000; }
+        .status-default { background: #e2e3e5; color: #383d41; }
+
+        .btn-small {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.85rem;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+            background: #fff;
+            margin-top: 0.2rem;
+            margin-right: 0.2rem;
+            transition: var(--transition);
+        }
+        .btn-small:hover {
+            background: var(--accent-color);
+            color: #fff;
+            border-color: var(--accent-color);
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-family: inherit;
+        }
+
+        /* Wishlist and Rewards placeholders */
+        .placeholder-text {
+            text-align: center;
+            color: var(--text-light);
+            padding: 3rem;
+        }
+
+        @media (max-width: 768px) {
+            .tabs-container {
+                flex-direction: column;
+            }
+            .tab-buttons {
+                flex-direction: row;
+                overflow-x: auto;
+            }
+            .order-table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <a href="index.html" class="logo"><img src="sri-gifts-logo-new.png" alt="SRI GIFTS" class="main-logo-img"></a>
+        <nav>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="products.html">Products</a></li>
+                <li><a href="track-order.html">Track Order</a></li>
+                <li><a href="about.html">About</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="page-header" style="padding-bottom: 0; background: none;">
+        <h1 id="welcome-text">My Profile</h1>
+    </div>
+
+    <div class="profile-container">
+        <div class="tabs-container">
+            <!-- Sidebar -->
+            <div class="tab-buttons">
+                <button class="tab-btn active" onclick="openTab('dashboard')">Dashboard</button>
+                <button class="tab-btn" onclick="openTab('orders')">Orders</button>
+                <button class="tab-btn" onclick="openTab('addresses')">Addresses</button>
+                <button class="tab-btn" onclick="openTab('notifications')">Notifications</button>
+                <button class="tab-btn" onclick="openTab('wishlist')">Wishlist</button>
+                <button class="tab-btn" onclick="openTab('settings')">Settings</button>
+                <button class="tab-btn" id="logout-btn" style="color: red;">Logout</button>
+            </div>
+
+            <!-- Content Area -->
+            <div class="tab-content">
+                
+                <!-- Dashboard Tab -->
+                <div id="dashboard" class="tab-panel active">
+                    <h2>Dashboard</h2>
+                    <div class="quick-actions">
+                        <div class="quick-action-card" onclick="openTab('orders')">
+                            <h3 id="stat-orders">0</h3>
+                            <p>Total Orders</p>
+                        </div>
+                        <div class="quick-action-card" onclick="openTab('addresses')">
+                            <h3 id="stat-addresses">0</h3>
+                            <p>Saved Addresses</p>
+                        </div>
+                        <div class="quick-action-card" onclick="openTab('notifications')">
+                            <h3 id="stat-notifications">0</h3>
+                            <p>Notifications</p>
+                        </div>
+                    </div>
+                    
+                    <h3>My Information</h3>
+                    <div class="user-info" id="user-details" style="background: #f9f9f9; padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 2rem;">
+                        <p>Loading details...</p>
+                    </div>
+
+                    <h3>Recent Orders</h3>
+                    <div id="recent-orders-list">
+                        <p class="placeholder-text">Loading...</p>
+                    </div>
+                </div>
+
+                <!-- Orders Tab -->
+                <div id="orders" class="tab-panel">
+                    <h2>My Orders</h2>
+                    <table class="order-table">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Items</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orders-list-full">
+                            <tr>
+                                <td colspan="5" style="text-align:center;">Loading orders...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Addresses Tab -->
+                <div id="addresses" class="tab-panel">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h2>Address Book</h2>
+                        <button class="btn btn-accent" onclick="document.getElementById('add-address-form').style.display='block'">Add New Address</button>
+                    </div>
+                    
+                    <div id="add-address-form" style="display:none; background: #f9f9f9; padding: 1.5rem; border-radius: 8px; margin: 1rem 0;">
+                        <h3>Add New Address</h3>
+                        <div class="form-group">
+                            <label>Address Type</label>
+                            <select id="addr-type">
+                                <option value="Home">Home</option>
+                                <option value="Work">Work</option>
+                                <option value="Friend">Friend's Address</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Recipient Full Name</label>
+                            <input type="text" id="addr-name" placeholder="Who should receive this?">
+                        </div>
+                        <div class="form-group">
+                            <label>Recipient Mobile Number</label>
+                            <input type="tel" id="addr-mobile" placeholder="10-digit number">
+                        </div>
+                        <div class="form-group">
+                            <label>Address</label>
+                            <textarea id="addr-text" rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>City</label>
+                            <input type="text" id="addr-city">
+                        </div>
+                        <div class="form-group">
+                            <label>Pincode</label>
+                            <input type="text" id="addr-pincode">
+                        </div>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                            <input type="checkbox" id="addr-default"> Make this my default address
+                        </label>
+                        <button class="btn btn-primary" onclick="saveAddress()">Save Address</button>
+                        <button class="btn" style="border:1px solid #ccc; background:#fff;" onclick="document.getElementById('add-address-form').style.display='none'">Cancel</button>
+                    </div>
+
+                    <div class="address-grid" id="address-list">
+                        <p class="placeholder-text">Loading addresses...</p>
+                    </div>
+                </div>
+
+                <!-- Notifications Tab -->
+                <div id="notifications" class="tab-panel">
+                    <h2>Notifications Center</h2>
+                    <div class="notification-list" id="notifications-list">
+                        <p class="placeholder-text">Loading notifications...</p>
+                    </div>
+                </div>
+
+                <!-- Settings Tab -->
+                <div id="settings" class="tab-panel">
+                    <h2>Account Settings</h2>
+                    <div style="max-width: 500px;">
+                        <div class="form-group">
+                            <label>Full Name</label>
+                            <input type="text" id="set-name">
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="set-email" readonly style="background: #eee;">
+                        </div>
+                        <div class="form-group">
+                            <label>Mobile</label>
+                            <input type="text" id="set-mobile">
+                        </div>
+                        <div class="form-group">
+                            <label>Date of Birth</label>
+                            <input type="date" id="set-dob">
+                        </div>
+                        <button class="btn btn-primary" onclick="updateProfile()">Save Changes</button>
+                    </div>
+                </div>
+
+                <!-- Wishlist Tab -->
+                <div id="wishlist" class="tab-panel">
+                    <h2>My Wishlist</h2>
+                    <div class="placeholder-text">
+                        <svg viewBox="0 0 24 24" style="width: 64px; fill: #ddd; margin-bottom: 1rem;"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                        <p>Your wishlist is currently empty.</p>
+                        <a href="products.html" class="btn btn-accent" style="margin-top: 1rem;">Browse Products</a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Review Modal -->
+    <div class="modal-overlay" id="review-modal">
+        <div class="modal-content" style="max-width: 600px; padding: 2rem; display: block; flex-direction: column;">
+            <span class="modal-close" onclick="closeReviewModal()">&times;</span>
+            <h2>Write a Review</h2>
+            <p id="review-product-title" style="font-weight: 600; color: var(--primary-color); margin-bottom: 1rem;"></p>
+            
+            <div class="star-rating">
+                <input type="radio" id="star5" name="rating" value="5" /><label for="star5" title="5 stars">★</label>
+                <input type="radio" id="star4" name="rating" value="4" /><label for="star4" title="4 stars">★</label>
+                <input type="radio" id="star3" name="rating" value="3" /><label for="star3" title="3 stars">★</label>
+                <input type="radio" id="star2" name="rating" value="2" /><label for="star2" title="2 stars">★</label>
+                <input type="radio" id="star1" name="rating" value="1" /><label for="star1" title="1 star">★</label>
+            </div>
+
+            <div class="form-group">
+                <textarea id="review-comment" rows="4" placeholder="What did you think about this product?"></textarea>
+            </div>
+
+            <div class="photo-upload-container" onclick="document.getElementById('review-photo').click()">
+                <p>📷 Click to upload a photo of your gift</p>
+                <input type="file" id="review-photo" style="display: none;" accept="image/*" onchange="previewPhoto(event)">
+                <img id="photo-preview-img" class="photo-preview">
+            </div>
+
+            <button class="btn btn-primary" style="width: 100%;" onclick="submitReview()">Submit Review</button>
+        </div>
+    </div>
+
+    <!-- Floating Elements -->
+    <div class="floating-cart" title="View Cart" onclick="window.location.href='index.html'">
+        <span class="cart-count">0</span>
+        <svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1.003 1.003 0 0 0 20 4H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z" /></svg>
+    </div>
+
+    <script src="script.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        let userData = null;
+        let userOrders = [];
+        let reviewTargetProduct = '';
+        let reviewPhotoBase64 = null;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const sessionId = localStorage.getItem('sri_session_id');
+            if (!sessionId) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            setTimeout(() => {
+                fetchProfile(sessionId);
+            }, 300);
+
+            document.getElementById('logout-btn').addEventListener('click', () => {
+                localStorage.removeItem('sri_session_id');
+                window.location.href = 'login.html';
+            });
+        });
+
+        function openTab(tabId) {
+            document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        async function fetchProfile(sessionId) {
+            try {
+                const res = await fetch('/api/user/session/' + sessionId);
+                const data = await res.json();
+
+                if (data.success) {
+                    userData = data.user;
+                    document.getElementById('welcome-text').textContent = 'Welcome, ' + (userData.name || 'User');
+                    
+                    // Fill Settings form
+                    document.getElementById('set-name').value = userData.name || '';
+                    document.getElementById('set-email').value = userData.email || '';
+                    document.getElementById('set-mobile').value = userData.mobile || '';
+
+                    // Display User Info in Dashboard
+                    document.getElementById('user-details').innerHTML = `
+                        <p><strong>Name:</strong> ${userData.name || 'N/A'}</p>
+                        <p><strong>Email:</strong> ${userData.email}</p>
+                        <p><strong>Mobile:</strong> ${userData.mobile}</p>
+                    `;
+
+                    fetchOrders(userData.id);
+                    fetchAddresses(userData.id);
+                    fetchNotifications(userData.id);
+                    fetchWishlist(userData.id);
+                } else {
+                    window.location.href = 'login.html';
+                }
+            } catch (error) {
+                console.error("Error loading profile", error);
+            }
+        }
+
+        async function fetchOrders(userId) {
+            try {
+                const res = await fetch('/api/user/' + userId + '/orders');
+                const data = await res.json();
+                userOrders = data.orders || [];
+                
+                document.getElementById('stat-orders').textContent = userOrders.length;
+                
+                const tbody = document.getElementById('orders-list-full');
+                const recentDiv = document.getElementById('recent-orders-list');
+                
+                tbody.innerHTML = '';
+                recentDiv.innerHTML = '';
+
+                if (userOrders.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">You have no past orders.</td></tr>';
+                    recentDiv.innerHTML = '<p class="placeholder-text">No recent orders.</p>';
+                    return;
+                }
+
+                userOrders.forEach((order, index) => {
+                    let itemsParsed = [];
+                    try { itemsParsed = JSON.parse(order.items || '[]'); } catch (e) { }
+                    let itemsStr = itemsParsed.map(i => i.title).join(', ');
+
+                    let statusClass = 'status-default';
+                    if (order.status === 'Processing') statusClass = 'status-processing';
+                    if (order.status === 'Shipped' || order.status === 'Out for Delivery') statusClass = 'status-shipped';
+                    if (order.status === 'Delivered') statusClass = 'status-delivered';
+                    if (order.status === 'Cancelled') statusClass = 'status-cancelled';
+
+                    // Actions HTML
+                    let actionsHtml = '';
+                    actionsHtml += `<button class="btn-small" onclick="downloadInvoice('${order.orderId}')">Invoice</button>`;
+                    actionsHtml += `<button class="btn-small" onclick="reorder('${order.orderId}')">Reorder</button>`;
+                    
+                    if (order.status === 'Processing') {
+                        actionsHtml += `<button class="btn-small" style="color: red;" onclick="cancelOrder('${order.orderId}')">Cancel</button>`;
+                    }
+                    if (order.status === 'Delivered' && itemsParsed.length > 0) {
+                        actionsHtml += `<button class="btn-small" style="color: var(--accent-color); border-color: var(--accent-color);" onclick="openReviewModal('${itemsParsed[0].title.replace(/'/g, "\\'")}')">Review</button>`;
+                    }
+
+                    const rowHtml = `
+                        <tr>
+                            <td><strong>${order.orderId}</strong></td>
+                            <td><div style="font-size:0.9rem;">${itemsStr || '-'}</div></td>
+                            <td style="font-weight: 600;">₹${order.total || 0}</td>
+                            <td><span class="status-badge ${statusClass}">${order.status}</span></td>
+                            <td>${actionsHtml}</td>
+                        </tr>
+                    `;
+                    tbody.insertAdjacentHTML('beforeend', rowHtml);
+
+                    // Add top 3 to recent orders in dashboard
+                    if (index < 3) {
+                        recentDiv.insertAdjacentHTML('beforeend', `
+                            <div style="padding: 1rem; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <strong>${order.orderId}</strong>
+                                    <div style="font-size: 0.85rem; color: #666; margin-top: 0.3rem;">${itemsStr}</div>
+                                </div>
+                                <div><span class="status-badge ${statusClass}">${order.status}</span></div>
+                            </div>
+                        `);
+                    }
+                });
+            } catch (error) {
+                console.error("Error loading orders", error);
+            }
+        }
+
+        async function cancelOrder(orderId) {
+            if(!confirm('Are you sure you want to cancel this order?')) return;
+            try {
+                const res = await fetch('/api/orders/' + orderId + '/cancel', { method: 'POST' });
+                const data = await res.json();
+                if(data.success) {
+                    alert('Order cancelled successfully.');
+                    fetchOrders(userData.id);
+                } else {
+                    alert('Failed: ' + data.error);
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        function reorder(orderId) {
+            const order = userOrders.find(o => o.orderId === orderId);
+            if(order) {
+                try {
+                    const items = JSON.parse(order.items);
+                    if (window.triggerDirectCheckout) {
+                        window.triggerDirectCheckout(items);
+                    } else {
+                        alert('Error: Checkout system not ready.');
+                    }
+                } catch(e) {}
+            }
+        }
+
+        function downloadInvoice(orderId) {
+            const order = userOrders.find(o => o.orderId === orderId);
+            if(!order) return;
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            doc.setFontSize(22);
+            doc.text("SRI GIFTS - INVOICE", 20, 20);
+            
+            doc.setFontSize(12);
+            doc.text("Order ID: " + order.orderId, 20, 35);
+            doc.text("Date: " + new Date().toLocaleDateString(), 20, 42);
+            doc.text("Status: " + order.status, 20, 49);
+            
+            doc.text("Customer: " + (order.customerName || userData.name), 20, 65);
+            doc.text("Address: " + order.address + ", " + order.city + " - " + order.pincode, 20, 72);
+            
+            doc.setFontSize(14);
+            doc.text("Items:", 20, 90);
+            doc.setFontSize(12);
+            let y = 100;
+            try {
+                const items = JSON.parse(order.items);
+                items.forEach((item, i) => {
+                    doc.text(`${i+1}. ${item.title} (₹${item.price}) x ${item.quantity || 1}`, 25, y);
+                    y += 8;
+                });
+            } catch(e) {}
+            
+            doc.setFontSize(16);
+            doc.text("Total: ₹" + order.total, 20, y + 15);
+            
+            doc.save(`Invoice_${order.orderId}.pdf`);
+        }
+
+        async function fetchAddresses(userId) {
+            try {
+                const res = await fetch('/api/user/' + userId + '/addresses');
+                const data = await res.json();
+                const list = document.getElementById('address-list');
+                list.innerHTML = '';
+                
+                if(data.addresses && data.addresses.length > 0) {
+                    document.getElementById('stat-addresses').textContent = data.addresses.length;
+                    data.addresses.forEach(addr => {
+                        list.insertAdjacentHTML('beforeend', `
+                            <div class="address-card ${addr.isDefault ? 'default-address' : ''}">
+                                <h4>${addr.name || userData.name} <span class="address-type-badge">${addr.type}</span></h4>
+                                <p style="margin: 1rem 0 0.5rem; font-size: 0.95rem;">
+                                    ${addr.address}<br>
+                                    ${addr.city} - ${addr.pincode}<br>
+                                    <strong>Mobile:</strong> ${addr.mobile || userData.mobile}
+                                </p>
+                                <div class="address-actions">
+                                    <button class="btn-small" onclick="deleteAddress(${addr.id})">Delete</button>
+                                </div>
+                            </div>
+                        `);
+                    });
+                } else {
+                    document.getElementById('stat-addresses').textContent = '0';
+                    list.innerHTML = '<p class="placeholder-text">No saved addresses.</p>';
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function saveAddress() {
+            const type = document.getElementById('addr-type').value;
+            const name = document.getElementById('addr-name').value.trim();
+            const mobile = document.getElementById('addr-mobile').value.trim();
+            const address = document.getElementById('addr-text').value;
+            const city = document.getElementById('addr-city').value;
+            const pincode = document.getElementById('addr-pincode').value;
+            const isDefault = document.getElementById('addr-default').checked;
+
+            if(!address || !city || !pincode) return alert('Please fill all fields');
+
+            try {
+                const res = await fetch(`/api/user/${userData.id}/addresses`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        type, 
+                        name: name || userData.name, 
+                        mobile: mobile || userData.mobile, 
+                        address, 
+                        city, 
+                        pincode, 
+                        isDefault 
+                    })
+                });
+                const data = await res.json();
+                if(data.success) {
+                    // Reset fields
+                    document.getElementById('addr-name').value = '';
+                    document.getElementById('addr-mobile').value = '';
+                    document.getElementById('addr-text').value = '';
+                    document.getElementById('addr-city').value = '';
+                    document.getElementById('addr-pincode').value = '';
+                    document.getElementById('addr-default').checked = false;
+                    
+                    document.getElementById('add-address-form').style.display = 'none';
+                    fetchAddresses(userData.id);
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        async function deleteAddress(addrId) {
+            if(!confirm('Delete this address?')) return;
+            try {
+                await fetch(`/api/user/${userData.id}/addresses/${addrId}`, { method: 'DELETE' });
+                fetchAddresses(userData.id);
+            } catch(e) {}
+        }
+
+        async function fetchNotifications(userId) {
+            try {
+                const res = await fetch(`/api/user/${userId}/notifications`);
+                const data = await res.json();
+                const list = document.getElementById('notifications-list');
+                list.innerHTML = '';
+                
+                let count = 0;
+                
+                // Offers
+                if(data.offers && data.offers.length > 0) {
+                    data.offers.forEach(offer => {
+                        count++;
+                        list.insertAdjacentHTML('beforeend', `
+                            <div class="notification-item offer">
+                                <div class="notification-header">
+                                    <span>🎉 ${offer.title}</span>
+                                    <span class="notification-date">${offer.offerDate}</span>
+                                </div>
+                                <p style="margin:0; font-size: 0.95rem;">${offer.message}</p>
+                            </div>
+                        `);
+                    });
+                }
+
+                // Notifs
+                if(data.notifications && data.notifications.length > 0) {
+                    data.notifications.forEach(n => {
+                        count++;
+                        list.insertAdjacentHTML('beforeend', `
+                            <div class="notification-item ${n.type || 'update'}">
+                                <div class="notification-header">
+                                    <span>${n.title}</span>
+                                </div>
+                                <p style="margin:0; font-size: 0.95rem;">${n.message}</p>
+                            </div>
+                        `);
+                    });
+                }
+
+                document.getElementById('stat-notifications').textContent = count;
+                if(count === 0) {
+                    list.innerHTML = '<p class="placeholder-text">You have no new notifications.</p>';
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        async function updateProfile() {
+            const name = document.getElementById('set-name').value;
+            const mobile = document.getElementById('set-mobile').value;
+            const email = document.getElementById('set-email').value;
+            // dob can be added if needed
+
+            try {
+                const res = await fetch(`/api/user/${userData.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, mobile })
+                });
+                const data = await res.json();
+                if(data.success) {
+                    alert('Profile updated');
+                    fetchProfile(localStorage.getItem('sri_session_id'));
+                }
+            } catch(e) {}
+        }
+
+        // Review logic
+        function openReviewModal(productTitle) {
+            reviewTargetProduct = productTitle;
+            document.getElementById('review-product-title').textContent = "Product: " + productTitle;
+            document.getElementById('review-modal').classList.add('active');
+            reviewPhotoBase64 = null;
+            document.getElementById('photo-preview-img').style.display = 'none';
+            document.getElementById('review-comment').value = '';
+            document.querySelectorAll('input[name="rating"]').forEach(r => r.checked = false);
+        }
+
+        function closeReviewModal() {
+            document.getElementById('review-modal').classList.remove('active');
+        }
+
+        function previewPhoto(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    reviewPhotoBase64 = e.target.result;
+                    const img = document.getElementById('photo-preview-img');
+                    img.src = reviewPhotoBase64;
+                    img.style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        async function submitReview() {
+            const ratingInput = document.querySelector('input[name="rating"]:checked');
+            if(!ratingInput) return alert('Please select a rating');
+            
+            const comment = document.getElementById('review-comment').value;
+
+            try {
+                const res = await fetch('/api/reviews', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        productTitle: reviewTargetProduct,
+                        userId: userData.id,
+                        userName: userData.name,
+                        rating: ratingInput.value,
+                        comment: comment,
+                        photo: reviewPhotoBase64
+                    })
+                });
+                const data = await res.json();
+                if(data.success) {
+                    alert('Review submitted successfully!');
+                    closeReviewModal();
+                } else {
+                    alert('Failed to submit review');
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        async function fetchWishlist(userId) {
+            try {
+                const res = await fetch('/api/user/' + userId + '/wishlist');
+                const data = await res.json();
+                const list = document.getElementById('wishlist');
+                list.innerHTML = '<h2>My Wishlist</h2>';
+                
+                if(data.wishlist && data.wishlist.length > 0) {
+                    const grid = document.createElement('div');
+                    grid.className = 'grid';
+                    data.wishlist.forEach(item => {
+                        grid.insertAdjacentHTML('beforeend', `
+                            <div class="product-card" style="max-width:200px;">
+                                <div class="product-img-wrap" style="height:200px;"><img src="${item.productImage}" alt="${item.productTitle}"></div>
+                                <div class="product-info" style="padding:1rem;">
+                                    <h3 class="product-title" style="font-size:1.1rem;">${item.productTitle}</h3>
+                                    <p class="product-price">₹${item.productPrice}</p>
+                                    <button class="btn-small" style="color:red; width:100%; border-color:red;" onclick="removeFromWishlist(${item.id})">Remove</button>
+                                </div>
+                            </div>
+                        `);
+                    });
+                    list.appendChild(grid);
+                } else {
+                    list.innerHTML += `
+                    <div class="placeholder-text">
+                        <svg viewBox="0 0 24 24" style="width: 64px; fill: #ddd; margin-bottom: 1rem;"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                        <p>Your wishlist is currently empty.</p>
+                        <a href="products.html" class="btn btn-accent" style="margin-top: 1rem;">Browse Products</a>
+                    </div>`;
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function removeFromWishlist(wishlistId) {
+            try {
+                const res = await fetch('/api/user/' + userData.id + '/wishlist/' + wishlistId, { method: 'DELETE' });
+                if(res.ok) fetchWishlist(userData.id);
+            } catch(e) { console.error(e); }
+        }
+    </script>
+</body>
+</html>
