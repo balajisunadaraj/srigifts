@@ -20,41 +20,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const cartCountElement = document.querySelector('.cart-count');
     if (cartCountElement) cartCountElement.textContent = window.cartItems.length;
 
-    // Dynamically inject Hamburger menu toggle button for mobile
+    // Remove mobile hamburger menu and keep top nav inline on smaller screens
     const headerEl = document.querySelector('header');
     const navEl = document.querySelector('nav');
     if (headerEl && navEl) {
-        const toggleBtn = document.createElement('button');
-        toggleBtn.className = 'mobile-nav-toggle';
-        toggleBtn.style.display = 'none';
-        toggleBtn.setAttribute('aria-label', 'Toggle Navigation');
-        toggleBtn.innerHTML = `
-            <span></span>
-            <span></span>
-            <span></span>
-        `;
-        
-        headerEl.appendChild(toggleBtn);
-        
-        toggleBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            toggleBtn.classList.toggle('open');
-            navEl.classList.toggle('nav-active');
-        });
-        
-        document.addEventListener('click', (e) => {
-            if (!navEl.contains(e.target) && !toggleBtn.contains(e.target)) {
-                toggleBtn.classList.remove('open');
-                navEl.classList.remove('nav-active');
-            }
-        });
-        
-        navEl.addEventListener('click', (e) => {
-            if (e.target.tagName === 'A') {
-                toggleBtn.classList.remove('open');
-                navEl.classList.remove('nav-active');
-            }
-        });
+        // No toggle button needed for inline responsive navigation.
     }
 
     // Auth State Handling
@@ -158,43 +128,46 @@ document.addEventListener("DOMContentLoaded", () => {
     const modalClose = document.getElementById('modal-close');
     const modalAddToCart = document.getElementById('modal-add-to-cart');
 
-    // DYNAMIC RENDERING FROM API
+    // Home page category list
+    const homeCategories = [
+        { name: 'Engraving gifts', image: 'engraving gifts.png' },
+        { name: 'Photo frames', image: 'Photo frames.png' },
+        { name: 'Caricature', image: 'Caricature .png' },
+        { name: 'Customized Water bottle', image: 'Customized Water bottle.png' },
+        { name: 'Customized gifts', image: 'Customized gifts.png' },
+        { name: 'Wooden Engraving', image: 'Wooden Engraving.png' },
+        { name: 'Lamp gifts', image: 'Lamp gifts.png' },
+        { name: 'Gifts & Toys', image: 'Gifts & Toys.png' },
+        { name: 'Customized clock', image: 'Customized clock.png' },
+        { name: 'MDF Items', image: 'MDF Items.png' },
+        { name: 'Acrylic frame', image: 'Acrylic frame.png' },
+        { name: 'Keychains', image: 'Keychains.png' },
+        { name: 'Couples gifts', image: 'Couples gifts.png' },
+        { name: 'Mobile customized cover', image: 'Mobile customize cover.png' },
+        { name: 'Seed pencil & pen', image: 'Seed pencil & pen.png' },
+        { name: 'Wallet engraving & Sketch', image: 'Wallet engraving & Sketch.png' }
+    ];
     let products = [];
     let offers = [];
-    let categories = [];
+    let categories = [...homeCategories];
 
     async function loadProducts() {
         try {
-            const [resProd, resOff, resCat] = await Promise.all([
+            const [resProd, resOff] = await Promise.all([
                 fetch('https://srigift-1mrp.onrender.com/api/products'),
-                fetch('https://srigift-1mrp.onrender.com/api/offers'),
-                fetch('https://srigift-1mrp.onrender.com/api/categories').then(r => r.json()).catch(() => ({ success: false }))
+                fetch('https://srigift-1mrp.onrender.com/api/offers')
             ]);
             products = await resProd.json();
             const offersData = await resOff.json();
             if (offersData.success) {
                 offers = offersData.offers;
             }
-            if (resCat && resCat.success && Array.isArray(resCat.categories) && resCat.categories.length > 0) {
-                categories = resCat.categories;
-            } else {
-                categories = [
-                    { id: -1, name: 'Personalized Gifts' },
-                    { id: -2, name: 'Premium Keychains' },
-                    { id: -3, name: '3D Printed Masterpieces' },
-                    { id: -4, name: 'Elegant Photo Frames' }
-                ];
-            }
+            categories = [...homeCategories];
             renderAllProducts();
             renderOffers();
         } catch (error) {
             console.error('Error fetching data:', error);
-            categories = [
-                { id: -1, name: 'Personalized Gifts' },
-                { id: -2, name: 'Premium Keychains' },
-                { id: -3, name: '3D Printed Masterpieces' },
-                { id: -4, name: 'Elegant Photo Frames' }
-            ];
+            categories = [...homeCategories];
             renderAllProducts();
         }
     }
@@ -212,18 +185,36 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const activeOffers = offers.filter(offer => offer.offerDate === todayStr);
 
+        const wrapper = offersList.closest('.offers-slideshow-wrapper');
+        const prevBtn = document.getElementById('offers-prev');
+        const nextBtn = document.getElementById('offers-next');
+        const dotsContainer = document.getElementById('offers-dots');
+
         if (activeOffers.length === 0) {
-            offersList.innerHTML = '<p style="text-align:center; color: var(--text-light); width: 100%; grid-column: 1/-1;">No special offers or notices active today. Check back soon!</p>';
+            offersList.innerHTML = `
+                <div class="offer-slide offer-slide-empty">
+                    <div class="offer-slide-inner">
+                        <div class="offer-no-active">
+                            <span style="font-size: 2.5rem;">🎁</span>
+                            <h3>No Active Offers Today</h3>
+                            <p>Check back soon for exclusive deals and special announcements!</p>
+                        </div>
+                    </div>
+                </div>`;
+            if (prevBtn) prevBtn.style.display = 'none';
+            if (nextBtn) nextBtn.style.display = 'none';
+            if (dotsContainer) dotsContainer.innerHTML = '';
             return;
         }
 
-        activeOffers.forEach(offer => {
+        if (prevBtn) prevBtn.style.display = '';
+        if (nextBtn) nextBtn.style.display = '';
+
+        activeOffers.forEach((offer, idx) => {
             const dateStr = new Date(offer.offerDate).toLocaleDateString('en-IN', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric'
+                day: 'numeric', month: 'short', year: 'numeric'
             });
-            
+
             let badgeHtml = '';
             if (offer.discount > 0) {
                 badgeHtml = `<span class="offer-badge discount">${offer.discount}% OFF</span>`;
@@ -232,22 +223,87 @@ document.addEventListener("DOMContentLoaded", () => {
             } else {
                 badgeHtml = `<span class="offer-badge seasonal">Special</span>`;
             }
-            
-            const cardHtml = `
-                <div class="offer-card">
-                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+
+            const imgHtml = offer.image
+                ? `<div class="offer-slide-img"><img src="${offer.image}" alt="${escapeHtml(offer.title)}"></div>`
+                : `<div class="offer-slide-img offer-slide-img-placeholder"><span>🏷️</span></div>`;
+
+            const discountHtml = offer.discount > 0
+                ? `<div class="offer-slide-discount">${offer.discount}% OFF on ${offer.category === 'All' ? 'All Products' : offer.category}</div>`
+                : '';
+
+            const slide = `
+                <div class="offer-slide${idx === 0 ? ' active' : ''}" data-index="${idx}">
+                    ${imgHtml}
+                    <div class="offer-slide-content">
                         ${badgeHtml}
+                        <h3 class="offer-slide-title">${offer.title}</h3>
+                        <p class="offer-slide-message">${offer.message}</p>
+                        ${discountHtml}
+                        <div class="offer-slide-meta">
+                            <span>For: ${offer.category === 'All' ? 'All Products' : offer.category}</span>
+                            <span>${dateStr}</span>
+                        </div>
                     </div>
-                    <h4 class="offer-title" style="margin-top: 1.25rem; margin-bottom: 0.5rem;">${offer.title}</h4>
-                    <p class="offer-message">${offer.message}</p>
-                    <div style="font-size: 0.85rem; color: #888; margin-top: auto; border-top: 1px solid rgba(0,0,0,0.05); padding-top: 0.8rem; display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                        <span>For: ${offer.category}</span>
-                        <span class="offer-date" style="border: none; padding: 0; margin: 0; font-size: 0.85rem;">${dateStr}</span>
-                    </div>
-                </div>
-            `;
-            offersList.insertAdjacentHTML('beforeend', cardHtml);
+                </div>`;
+            offersList.insertAdjacentHTML('beforeend', slide);
         });
+
+        // Build dots
+        if (dotsContainer) {
+            dotsContainer.innerHTML = '';
+            activeOffers.forEach((_, idx) => {
+                const dot = document.createElement('button');
+                dot.className = 'slideshow-dot' + (idx === 0 ? ' active' : '');
+                dot.setAttribute('aria-label', `Slide ${idx + 1}`);
+                dot.addEventListener('click', () => goToSlide(idx));
+                dotsContainer.appendChild(dot);
+            });
+        }
+
+        let currentSlide = 0;
+        let autoPlayTimer = null;
+
+        function goToSlide(n) {
+            const slides = offersList.querySelectorAll('.offer-slide');
+            const dots = dotsContainer ? dotsContainer.querySelectorAll('.slideshow-dot') : [];
+            slides.forEach(s => s.classList.remove('active'));
+            dots.forEach(d => d.classList.remove('active'));
+            currentSlide = (n + slides.length) % slides.length;
+            slides[currentSlide].classList.add('active');
+            if (dots[currentSlide]) dots[currentSlide].classList.add('active');
+        }
+
+        function startAutoPlay() {
+            stopAutoPlay();
+            if (activeOffers.length > 1) {
+                autoPlayTimer = setInterval(() => goToSlide(currentSlide + 1), 4500);
+            }
+        }
+
+        function stopAutoPlay() {
+            if (autoPlayTimer) { clearInterval(autoPlayTimer); autoPlayTimer = null; }
+        }
+
+        if (prevBtn) {
+            // Remove old listeners by cloning
+            const newPrev = prevBtn.cloneNode(true);
+            prevBtn.parentNode.replaceChild(newPrev, prevBtn);
+            newPrev.addEventListener('click', () => { goToSlide(currentSlide - 1); stopAutoPlay(); startAutoPlay(); });
+        }
+        if (nextBtn) {
+            const newNext = nextBtn.cloneNode(true);
+            nextBtn.parentNode.replaceChild(newNext, nextBtn);
+            newNext.addEventListener('click', () => { goToSlide(currentSlide + 1); stopAutoPlay(); startAutoPlay(); });
+        }
+
+        startAutoPlay();
+
+        // Pause on hover
+        if (wrapper) {
+            wrapper.addEventListener('mouseenter', stopAutoPlay);
+            wrapper.addEventListener('mouseleave', startAutoPlay);
+        }
     }
 
     // Stars input interaction
@@ -475,6 +531,27 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function renderAllProducts() {
+        // Home Page Category Grid Rendering
+        const homeCategoryGrid = document.getElementById('home-categories-grid');
+        if (homeCategoryGrid) {
+            homeCategoryGrid.innerHTML = '';
+            categories.forEach((cat) => {
+                const slug = String(cat.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                const categoryBtn = document.createElement('a');
+                categoryBtn.className = 'category-button';
+                categoryBtn.href = `products.html?cat=${encodeURIComponent(cat.name)}#cat-${slug}`;
+                categoryBtn.innerHTML = `
+                    <div class="category-image-wrap">
+                        <img src="${escapeHtml(cat.image)}" alt="${escapeHtml(cat.name)}">
+                    </div>
+                    <div class="category-label">
+                        <p class="category-name">${escapeHtml(cat.name)}</p>
+                    </div>
+                `;
+                homeCategoryGrid.appendChild(categoryBtn);
+            });
+        }
+
         // Home Page Rendering
         const homeGrid = document.getElementById('home-products-grid');
         if (homeGrid) {
@@ -502,6 +579,7 @@ document.addEventListener("DOMContentLoaded", () => {
             dynamicContainer.innerHTML = '';
             categories.forEach((cat, index) => {
                 const matchName = cat.name;
+                const slug = String(cat.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
                 const filtered = products.filter(p => {
                     const mappedCat = categoryNameMap[p.category] || p.category;
                     return p.category === matchName || mappedCat === matchName || p.category === matchName.replace(' Gifts', '').replace(' Premium', '').replace(' Elegant', '').replace(' Photo', '').replace(' Masterpieces', '').replace(' 3D Printed', '');
@@ -511,9 +589,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 const paddingStyle = index === 0 ? 'padding-top: 2rem;' : '';
                 
                 const sectionHtml = `
-                    <section class="container" style="${bgColor} ${paddingStyle}">
+                    <section id="cat-${slug}" class="container" style="${bgColor} ${paddingStyle}">
                         <h2>${cat.name}</h2>
-                        <div class="grid" id="grid-cat-${cat.id}">
+                        <div class="grid" id="grid-cat-${slug}">
                             ${filtered.length === 0 
                                 ? '<p style="grid-column: 1/-1; color: var(--text-light);">No products in this category yet.</p>' 
                                 : filtered.map(p => createProductCard(p)).join('')}
@@ -522,6 +600,29 @@ document.addEventListener("DOMContentLoaded", () => {
                 `;
                 dynamicContainer.insertAdjacentHTML('beforeend', sectionHtml);
             });
+            // If there's a hash or cat query, scroll directly to that category section
+            setTimeout(() => {
+                const params = new URLSearchParams(window.location.search);
+                const catQuery = params.get('cat');
+                const hash = window.location.hash;
+                let target = null;
+                if (hash) target = document.querySelector(hash);
+                if (!target && catQuery) {
+                    const slug = String(catQuery).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                    target = document.getElementById('cat-' + slug);
+                }
+                if (target) {
+                    const y = target.getBoundingClientRect().top + window.scrollY - 80; // offset for header
+                    window.scrollTo({ top: y, behavior: 'smooth' });
+                    // temporary highlight to show the selected category
+                    setTimeout(() => {
+                        try {
+                            target.classList.add('target-highlight');
+                            setTimeout(() => target.classList.remove('target-highlight'), 3200);
+                        } catch (e) { /* ignore if element disappears */ }
+                    }, 450);
+                }
+            }, 120);
         }
 
         // Category Page Rendering
@@ -972,7 +1073,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     
                     const checkoutItems = window.isDirectCheckout ? window.directCheckoutItems : window.cartItems;
                     if (shouldRedirectToWhatsapp(checkoutItems)) {
-                        const whatsappMessage = encodeURIComponent('i want my gift with this photo/name : ');
+                        const whatsappMessage = encodeURIComponent('Order ID : (Your id (Enter your order id here), i want my gift with this (photo/name) :');
                         window.location.href = `https://wa.me/919080125879?text=${whatsappMessage}`;
                     }
                 } catch (error) {

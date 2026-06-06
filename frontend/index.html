@@ -27,22 +27,35 @@
     </header>
 
     <!-- Hero Section -->
-    <section class="hero">
-        <h1>Curating Moments of Joy</h1>
-        <p>Premium customized gifting for those who matter most. Discover our exclusive collection of engraved art,
-            sleek keychains, 3D printed decor, and timeless photo frames.</p>
-        <a href="products.html" class="btn btn-primary">Explore Collection</a>
+    <section class="hero banner-hero">
+        <img src="banner.jpg" alt="Sri Gifts Banner" class="hero-banner-img">
+        <a href="products.html" class="btn btn-primary">Explore Now</a>
     </section>
 
-    <!-- Offer & Notification Centre Section -->
-    <section class="container">
-        <div class="text-center">
-            <h2>Special Offers & Announcements</h2>
+    <!-- Offer Slideshow Section -->
+    <section class="offers-slideshow-section">
+        <div class="text-center" style="padding: 3rem 5% 1.5rem;">
+            <h2>Special Offers &amp; Announcements</h2>
             <p>Explore exclusive seasonal discounts, active coupon alerts, and important store updates.</p>
         </div>
+        <div class="offers-slideshow-wrapper">
+            <div class="offers-slideshow-track" id="home-offers-list">
+                <!-- Offer slides will be rendered here dynamically -->
+            </div>
+            <button class="slideshow-btn slideshow-prev" id="offers-prev" aria-label="Previous offer">&#8249;</button>
+            <button class="slideshow-btn slideshow-next" id="offers-next" aria-label="Next offer">&#8250;</button>
+            <div class="slideshow-dots" id="offers-dots"></div>
+        </div>
+    </section>
 
-        <div class="offers-grid" id="home-offers-list">
-            <!-- Special offers and announcements will be rendered here dynamically -->
+    <!-- Categories Grid Section -->
+    <section class="container">
+        <div class="text-center">
+            <h2>Browse by Category</h2>
+            <p>Discover our wide range of customized gifts and keepsakes</p>
+        </div>
+        <div class="categories-grid" id="home-categories-grid">
+            <!-- Category buttons will be rendered here dynamically -->
         </div>
     </section>
 
@@ -106,6 +119,7 @@
                         </svg>
                         <span>WhatsApp Us</span>
                     </a>
+                    
                 </div>
                 
                 <!-- Instagram button at the left bottom of the contact section -->
@@ -119,6 +133,9 @@
                     </a>
                 </div>
             </div>
+        </div>
+        <div class="footer-map-embed">
+            <iframe src="https://www.google.com/maps?q=NRKR+road,+town+vijayam+mess+opposite,+Axis+bank+3rd+floor,+sivakasi+-626+123&output=embed" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
         </div>
         <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 2rem 0;">
         <p class="copyright">&copy; 2026 SRI GIFTS. Premium Gifting Experience.</p>
