@@ -383,7 +383,7 @@
 
         async function fetchProfile(sessionId) {
             try {
-                const res = await fetch('https://srigift-1mrp.onrender.com/api/user/session/' + sessionId);
+                const res = await fetch('https://srigifts.onrender.com/api/user/session/' + sessionId);
                 const data = await res.json();
 
                 if (data.success) {
@@ -416,7 +416,7 @@
 
         async function fetchOrders(userId) {
             try {
-                const res = await fetch('https://srigift-1mrp.onrender.com/api/user/' + userId + '/orders');
+                const res = await fetch('https://srigifts.onrender.com/api/user/' + userId + '/orders');
                 const data = await res.json();
                 userOrders = data.orders || [];
                 
@@ -489,7 +489,7 @@
         async function cancelOrder(orderId) {
             if(!confirm('Are you sure you want to cancel this order?')) return;
             try {
-                const res = await fetch('https://srigift-1mrp.onrender.com/api/orders/' + orderId + '/cancel', { method: 'POST' });
+                const res = await fetch('https://srigifts.onrender.com/api/orders/' + orderId + '/cancel', { method: 'POST' });
                 const data = await res.json();
                 if(data.success) {
                     alert('Order cancelled successfully.');
@@ -554,7 +554,7 @@
 
         async function fetchAddresses(userId) {
             try {
-                const res = await fetch('https://srigift-1mrp.onrender.com/api/user/' + userId + '/addresses');
+                const res = await fetch('https://srigifts.onrender.com/api/user/' + userId + '/addresses');
                 const data = await res.json();
                 const list = document.getElementById('address-list');
                 list.innerHTML = '';
@@ -595,7 +595,7 @@
             if(!address || !city || !pincode) return alert('Please fill all fields');
 
             try {
-                const res = await fetch(`https://srigift-1mrp.onrender.com/api/user/${userData.id}/addresses`, {
+                const res = await fetch(`https://srigifts.onrender.com/api/user/${userData.id}/addresses`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
@@ -627,14 +627,14 @@
         async function deleteAddress(addrId) {
             if(!confirm('Delete this address?')) return;
             try {
-                await fetch(`https://srigift-1mrp.onrender.com/api/user/${userData.id}/addresses/${addrId}`, { method: 'DELETE' });
+                await fetch(`https://srigifts.onrender.com/api/user/${userData.id}/addresses/${addrId}`, { method: 'DELETE' });
                 fetchAddresses(userData.id);
             } catch(e) {}
         }
 
         async function fetchNotifications(userId) {
             try {
-                const res = await fetch(`https://srigift-1mrp.onrender.com/api/user/${userId}/notifications`);
+                const res = await fetch(`https://srigifts.onrender.com/api/user/${userId}/notifications`);
                 const data = await res.json();
                 const list = document.getElementById('notifications-list');
                 list.innerHTML = '';
@@ -686,7 +686,7 @@
             // dob can be added if needed
 
             try {
-                const res = await fetch(`https://srigift-1mrp.onrender.com/api/user/${userData.id}`, {
+                const res = await fetch(`https://srigifts.onrender.com/api/user/${userData.id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name, email, mobile })
@@ -735,7 +735,7 @@
             const comment = document.getElementById('review-comment').value;
 
             try {
-                const res = await fetch('https://srigift-1mrp.onrender.com/api/reviews', {
+                const res = await fetch('https://srigifts.onrender.com/api/reviews', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -759,7 +759,7 @@
 
         async function fetchWishlist(userId) {
             try {
-                const res = await fetch('https://srigift-1mrp.onrender.com/api/user/' + userId + '/wishlist');
+                const res = await fetch('https://srigifts.onrender.com/api/user/' + userId + '/wishlist');
                 const data = await res.json();
                 const list = document.getElementById('wishlist');
                 list.innerHTML = '<h2>My Wishlist</h2>';
@@ -793,10 +793,11 @@
 
         async function removeFromWishlist(wishlistId) {
             try {
-                const res = await fetch('https://srigift-1mrp.onrender.com/api/user/' + userData.id + '/wishlist/' + wishlistId, { method: 'DELETE' });
+                const res = await fetch('https://srigifts.onrender.com/api/user/' + userData.id + '/wishlist/' + wishlistId, { method: 'DELETE' });
                 if(res.ok) fetchWishlist(userData.id);
             } catch(e) { console.error(e); }
         }
     </script>
 </body>
 </html>
+

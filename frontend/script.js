@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
         const storedCart = localStorage.getItem('sri_cart');
         if (storedCart) window.cartItems = JSON.parse(storedCart);
-    } catch(e) {}
+    } catch (e) { }
 
     // HTML Escaping Helper to secure dynamic attributes from special characters
     function escapeHtml(str) {
@@ -16,7 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
             .replace(/'/g, "&#039;");
     }
     window.escapeHtml = escapeHtml;
-    
+
     const cartCountElement = document.querySelector('.cart-count');
     if (cartCountElement) cartCountElement.textContent = window.cartItems.length;
 
@@ -32,7 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let currentUser = null;
 
     if (sessionId) {
-        fetch('https://srigift-1mrp.onrender.com/api/user/session/' + sessionId)
+        fetch('https://srigifts.onrender.com/api/user/session/' + sessionId)
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
@@ -154,8 +154,8 @@ document.addEventListener("DOMContentLoaded", () => {
     async function loadProducts() {
         try {
             const [resProd, resOff] = await Promise.all([
-                fetch('https://srigift-1mrp.onrender.com/api/products'),
-                fetch('https://srigift-1mrp.onrender.com/api/offers')
+                fetch('https://srigifts.onrender.com/api/products'),
+                fetch('https://srigifts.onrender.com/api/offers')
             ]);
             products = await resProd.json();
             const offersData = await resOff.json();
@@ -330,7 +330,7 @@ document.addEventListener("DOMContentLoaded", () => {
         listContainer.innerHTML = '<p style="color: #888; font-style: italic;">Loading reviews...</p>';
 
         try {
-            const res = await fetch(`https://srigift-1mrp.onrender.com/api/reviews/${encodeURIComponent(productTitle)}`);
+            const res = await fetch(`https://srigifts.onrender.com/api/reviews/${encodeURIComponent(productTitle)}`);
             const reviews = await res.json();
 
             if (reviews && reviews.length > 0) {
@@ -387,7 +387,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const userName = document.getElementById('modal-review-author').value.trim() || 'Guest';
             const comment = document.getElementById('modal-review-comment').value.trim();
             const photoInput = document.getElementById('modal-review-photo');
-            
+
             let photoBase64 = null;
             if (photoInput && photoInput.files && photoInput.files[0]) {
                 const file = photoInput.files[0];
@@ -399,7 +399,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             try {
-                const res = await fetch('https://srigift-1mrp.onrender.com/api/reviews', {
+                const res = await fetch('https://srigifts.onrender.com/api/reviews', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -436,7 +436,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const sessionId = localStorage.getItem('sri_session_id');
             if (sessionId) {
                 try {
-                    const sessionRes = await fetch('https://srigift-1mrp.onrender.com/api/user/session/' + sessionId);
+                    const sessionRes = await fetch('https://srigifts.onrender.com/api/user/session/' + sessionId);
                     const sessionData = await sessionRes.json();
                     if (sessionData.success) {
                         currentUser = sessionData.user;
@@ -447,15 +447,15 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
         if (!currentUser) return;
-        
+
         try {
-            const res = await fetch(`https://srigift-1mrp.onrender.com/api/user/${currentUser.id}/addresses`);
+            const res = await fetch(`https://srigifts.onrender.com/api/user/${currentUser.id}/addresses`);
             const data = await res.json();
-            
+
             if (data.success && data.addresses && data.addresses.length > 0) {
                 // Find default address (isDefault === 1) with loose check
                 const defAddress = data.addresses.find(addr => addr.isDefault == 1 || addr.isDefault === true || addr.isDefault == '1');
-                
+
                 if (defAddress) {
                     document.getElementById('checkout-name').value = defAddress.name || currentUser.name || '';
                     document.getElementById('checkout-mobile').value = defAddress.mobile || currentUser.mobile || '';
@@ -468,7 +468,7 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (err) {
             console.error('Error pre-filling default address:', err);
         }
-        
+
         // Fallback: use user profile info if no default address found
         document.getElementById('checkout-name').value = currentUser.name || '';
         document.getElementById('checkout-mobile').value = currentUser.mobile || '';
@@ -497,15 +497,15 @@ document.addEventListener("DOMContentLoaded", () => {
         const activeOffer = offers.find(o => o.offerDate === todayStr && (o.category === 'All' || o.category === product.category));
         if (activeOffer) {
             let badgeContent = `${activeOffer.title}<br><span style="font-weight: normal; font-size: 0.65rem;">${activeOffer.message}</span>`;
-            
+
             if (activeOffer.discount && activeOffer.discount > 0) {
                 finalPrice = product.price - (product.price * (activeOffer.discount / 100));
                 finalPrice = Math.round(finalPrice);
                 badgeContent += `<br><span style="background: white; color: #d4af37; padding: 2px 4px; border-radius: 2px; font-size: 0.7rem; font-weight: bold; margin-top: 4px; display: inline-block;">${activeOffer.discount}% OFF</span>`;
-                
+
                 displayPriceHtml = `<p class="product-price"><span style="text-decoration: line-through; color: #999; font-size: 0.9rem; margin-right: 8px;">₹${product.price}</span>₹${finalPrice}</p>`;
             }
-            
+
             offerBadgeHtml = `<div style="position: absolute; top: 10px; right: 10px; background: #d4af37; color: #111; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.75rem; z-index: 10; max-width: 150px; text-align: right; box-shadow: 0 2px 4px rgba(0,0,0,0.2); line-height: 1.2;">${badgeContent}</div>`;
         }
 
@@ -584,17 +584,17 @@ document.addEventListener("DOMContentLoaded", () => {
                     const mappedCat = categoryNameMap[p.category] || p.category;
                     return p.category === matchName || mappedCat === matchName || p.category === matchName.replace(' Gifts', '').replace(' Premium', '').replace(' Elegant', '').replace(' Photo', '').replace(' Masterpieces', '').replace(' 3D Printed', '');
                 });
-                
+
                 const bgColor = index % 2 === 1 ? 'background-color: var(--secondary-color);' : '';
                 const paddingStyle = index === 0 ? 'padding-top: 2rem;' : '';
-                
+
                 const sectionHtml = `
                     <section id="cat-${slug}" class="container" style="${bgColor} ${paddingStyle}">
                         <h2>${cat.name}</h2>
                         <div class="grid" id="grid-cat-${slug}">
-                            ${filtered.length === 0 
-                                ? '<p style="grid-column: 1/-1; color: var(--text-light);">No products in this category yet.</p>' 
-                                : filtered.map(p => createProductCard(p)).join('')}
+                            ${filtered.length === 0
+                        ? '<p style="grid-column: 1/-1; color: var(--text-light);">No products in this category yet.</p>'
+                        : filtered.map(p => createProductCard(p)).join('')}
                         </div>
                     </section>
                 `;
@@ -673,13 +673,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 currentSelectedProduct = { title, price, image: imgSrc, category };
                 document.getElementById('modal-title').textContent = title;
                 document.getElementById('modal-desc').textContent = desc || 'Beautifully crafted premium gift.';
-                
+
                 if (discount > 0) {
                     document.getElementById('modal-price').innerHTML = `<span style="text-decoration: line-through; color: #999; font-size: 1rem; margin-right: 10px;">₹${originalPrice}</span>₹${price} <span style="font-size: 0.9rem; color: #d4af37; margin-left: 10px;">(${discount}% OFF)</span>`;
                 } else {
                     document.getElementById('modal-price').textContent = '₹' + price;
                 }
-                
+
                 document.getElementById('modal-image').src = imgSrc;
 
                 const proceedBtn = document.getElementById('modal-proceed-checkout');
@@ -767,7 +767,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!currentUser) return alert('Please login to add to wishlist.');
 
             try {
-                const res = await fetch('https://srigift-1mrp.onrender.com/api/user/' + currentUser.id + '/wishlist', {
+                const res = await fetch('https://srigifts.onrender.com/api/user/' + currentUser.id + '/wishlist', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -805,7 +805,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 trackResult.innerHTML = `<p>Loading...</p>`;
 
                 try {
-                    const res = await fetch(`https://srigift-1mrp.onrender.com/api/orders/${input}`);
+                    const res = await fetch(`https://srigifts.onrender.com/api/orders/${input}`);
                     const data = await res.json();
 
                     if (data.success && data.order) {
@@ -950,7 +950,7 @@ document.addEventListener("DOMContentLoaded", () => {
     window.triggerDirectCheckout = (items) => {
         window.directCheckoutItems = items;
         window.isDirectCheckout = true;
-        
+
         let itemsHtml = '';
         let total = 0;
         items.forEach((item) => {
@@ -1022,11 +1022,11 @@ document.addEventListener("DOMContentLoaded", () => {
             setTimeout(async () => {
                 const orderId = 'SG-' + Math.floor(100000 + Math.random() * 900000);
                 const itemTitles = checkoutItemsList.map(item => item.title);
-                
+
                 let orderMsg = `Order received with ${checkoutItemsList.length} items (${itemTitles.join(', ')}). Paid via ${payMethod}.`;
 
                 try {
-                    const res = await fetch('https://srigift-1mrp.onrender.com/api/orders', {
+                    const res = await fetch('https://srigifts.onrender.com/api/orders', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -1066,11 +1066,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                     cartOverlay.classList.remove('active');
                     if (qrModal) qrModal.classList.remove('active');
-                    
+
                     document.getElementById('checkout-btn').textContent = originalText;
                     const qrVerifyBtn = document.getElementById('qr-verify-btn');
                     if (qrVerifyBtn) qrVerifyBtn.textContent = 'Verify & Place Order';
-                    
+
                     const checkoutItems = window.isDirectCheckout ? window.directCheckoutItems : window.cartItems;
                     if (shouldRedirectToWhatsapp(checkoutItems)) {
                         const whatsappMessage = encodeURIComponent('Order ID : (Your id (Enter your order id here), i want my gift with this (photo/name) :');
@@ -1088,17 +1088,17 @@ document.addEventListener("DOMContentLoaded", () => {
         if (method === 'UPI') {
             document.getElementById('qr-amount').textContent = '₹' + total;
             document.getElementById('upi-utr').value = ''; // Reset input
-            
+
             // Generate dynamic UPI QR Code
             const upiString = `upi://pay?pa=priyadharshinisuriyan@okaxis&pn=SriGifts&am=${total}&cu=INR`;
             const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(upiString)}`;
-            
+
             const qrImg = document.getElementById('qr-code-img');
             const qrLoading = document.getElementById('qr-loading');
-            
+
             qrImg.style.display = 'none';
             if (qrLoading) qrLoading.style.display = 'block';
-            
+
             qrImg.onload = () => {
                 if (qrLoading) qrLoading.style.display = 'none';
                 qrImg.style.display = 'block';
@@ -1106,14 +1106,14 @@ document.addEventListener("DOMContentLoaded", () => {
             qrImg.src = qrUrl;
 
             qrModal.classList.add('active');
-            
+
             document.getElementById('qr-verify-btn').onclick = () => {
                 const utr = document.getElementById('upi-utr').value.trim();
                 if (utr.length < 12) {
                     alert('Please enter a valid 12-digit UTR or Reference Number from your payment app.');
                     return;
                 }
-                
+
                 document.getElementById('qr-verify-btn').textContent = 'Verifying...';
                 processOrder('UPI', total, utr);
             };
@@ -1128,7 +1128,7 @@ async function deleteProduct(id) {
     if (!confirmDelete) return;
 
     try {
-        const res = await fetch('https://srigift-1mrp.onrender.com/api/products/' + id, {
+        const res = await fetch('https://srigifts.onrender.com/api/products/' + id, {
             method: 'DELETE'
         });
 
@@ -1142,3 +1142,4 @@ async function deleteProduct(id) {
         alert('Error deleting product');
     }
 }
+
