@@ -29,6 +29,37 @@
         <p>Browse our curated selection of fine gifts across all categories.</p>
     </div>
 
+    <!-- Search and Category Filters Section -->
+    <div class="search-section-wrapper container" style="padding-top: 1rem; padding-bottom: 2rem;">
+        <div class="search-bar-container">
+            <div class="search-input-box">
+                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="text" id="product-search-input" placeholder="Search for bottles, frames, keychains, caricature..." autocomplete="off">
+                <button id="search-clear-btn" class="search-clear-btn" aria-label="Clear search">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Horizontal Scrollable Category Chips -->
+        <div class="search-filters-scroll">
+            <div class="search-filters-container" id="search-category-chips">
+                <!-- Chips rendered dynamically from JS -->
+            </div>
+        </div>
+
+        <!-- Real-time Search Stats Banner -->
+        <div class="search-status" id="search-status-message" style="display: none;">
+            <span class="search-count-text"></span>
+        </div>
+    </div>
+
     <!-- Dynamic Categories Grid Sections -->
     <div id="dynamic-categories-container"></div>
 

@@ -20,6 +20,34 @@ document.addEventListener("DOMContentLoaded", () => {
     const cartCountElement = document.querySelector('.cart-count');
     if (cartCountElement) cartCountElement.textContent = window.cartItems.length;
 
+    function isQuotaExceededError(error) {
+        return error && (
+            error.name === 'QuotaExceededError' ||
+            error.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+            error.code === 22 ||
+            error.code === 1014
+        );
+    }
+
+    function saveCartState() {
+        try {
+            localStorage.setItem('sri_cart', JSON.stringify(window.cartItems));
+            return true;
+        } catch (err) {
+            if (isQuotaExceededError(err)) {
+                console.warn('Unable to save cart to localStorage, quota exceeded.', err);
+                try {
+                    sessionStorage.setItem('sri_cart_backup', JSON.stringify(window.cartItems));
+                } catch (backupErr) {
+                    console.warn('Unable to save cart backup to sessionStorage.', backupErr);
+                }
+                alert('Your cart could not be saved because browser storage is full. Remove items or checkout soon.');
+                return false;
+            }
+            throw err;
+        }
+    }
+
     // Remove mobile hamburger menu and keep top nav inline on smaller screens
     const headerEl = document.querySelector('header');
     const navEl = document.querySelector('nav');
@@ -150,6 +178,8 @@ document.addEventListener("DOMContentLoaded", () => {
     let products = [];
     let offers = [];
     let categories = [...homeCategories];
+    let searchQuery = "";
+    let selectedCategory = "All";
 
     async function loadProducts() {
         try {
@@ -530,6 +560,196 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+
+    const categoryNameMap = {
+        'Personalized': 'Personalized Gifts',
+        'Keychains': 'Premium Keychains',
+        '3D Printed': '3D Printed Masterpieces',
+        'Frames': 'Elegant Photo Frames'
+    };
+
+    function renderCategoryChips() {
+        const chipsContainer = document.getElementById('search-category-chips');
+        if (!chipsContainer) return;
+        
+        chipsContainer.innerHTML = '';
+        
+        // Add 'All Collection' chip
+        const allChip = document.createElement('button');
+        allChip.className = `filter-chip ${selectedCategory === 'All' ? 'active' : ''}`;
+        allChip.textContent = 'All Collection';
+        allChip.addEventListener('click', () => {
+            selectedCategory = 'All';
+            updateSelectedChip();
+            filterAndRender();
+        });
+        chipsContainer.appendChild(allChip);
+        
+        categories.forEach(cat => {
+            const chip = document.createElement('button');
+            chip.className = `filter-chip ${selectedCategory === cat.name ? 'active' : ''}`;
+            chip.textContent = cat.name;
+            chip.addEventListener('click', () => {
+                selectedCategory = cat.name;
+                updateSelectedChip();
+                filterAndRender();
+            });
+            chipsContainer.appendChild(chip);
+        });
+    }
+
+    function updateSelectedChip() {
+        const chips = document.querySelectorAll('.filter-chip');
+        chips.forEach(chip => {
+            if (chip.textContent === 'All Collection' && selectedCategory === 'All') {
+                chip.classList.add('active');
+            } else if (chip.textContent === selectedCategory) {
+                chip.classList.add('active');
+            } else {
+                chip.classList.remove('active');
+            }
+        });
+    }
+
+    function renderAllProductsGrouped() {
+        const dynamicContainer = document.getElementById('dynamic-categories-container');
+        if (!dynamicContainer) return;
+
+        dynamicContainer.innerHTML = '';
+        categories.forEach((cat, index) => {
+            const matchName = cat.name;
+            const slug = String(cat.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+            const filtered = products.filter(p => {
+                const mappedCat = categoryNameMap[p.category] || p.category;
+                return p.category === matchName || mappedCat === matchName || p.category === matchName.replace(' Gifts', '').replace(' Premium', '').replace(' Elegant', '').replace(' Photo', '').replace(' Masterpieces', '').replace(' 3D Printed', '');
+            });
+
+            const bgColor = index % 2 === 1 ? 'background-color: var(--secondary-color);' : '';
+            const paddingStyle = index === 0 ? 'padding-top: 2rem;' : '';
+
+            const sectionHtml = `
+                <section id="cat-${slug}" class="container" style="${bgColor} ${paddingStyle}">
+                    <h2>${cat.name}</h2>
+                    <div class="grid" id="grid-cat-${slug}">
+                        ${filtered.length === 0
+                            ? '<p style="grid-column: 1/-1; color: var(--text-light);">No products in this category yet.</p>'
+                            : filtered.map(p => createProductCard(p)).join('')}
+                    </div>
+                </section>
+            `;
+            dynamicContainer.insertAdjacentHTML('beforeend', sectionHtml);
+        });
+    }
+
+    function filterAndRender() {
+        const dynamicContainer = document.getElementById('dynamic-categories-container');
+        if (!dynamicContainer) return;
+
+        const query = searchQuery.toLowerCase().trim();
+        const categoryFilter = selectedCategory;
+        const isSearching = query.length > 0 || categoryFilter !== 'All';
+
+        const statusBar = document.getElementById('search-status-message');
+        const clearBtn = document.getElementById('search-clear-btn');
+
+        if (clearBtn) {
+            clearBtn.style.display = query.length > 0 ? 'flex' : 'none';
+        }
+
+        if (!isSearching) {
+            // Restore original grouped category sections
+            renderAllProductsGrouped();
+            if (statusBar) statusBar.style.display = 'none';
+            return;
+        }
+
+        // Filter products matching category and/or query
+        const filteredProducts = products.filter(product => {
+            // Category filter check
+            if (categoryFilter !== 'All') {
+                const mappedCat = categoryNameMap[product.category] || product.category;
+                const matchesCategory = product.category === categoryFilter || 
+                                       mappedCat === categoryFilter || 
+                                       product.category === categoryFilter.replace(' Gifts', '').replace(' Premium', '').replace(' Elegant', '').replace(' Photo', '').replace(' Masterpieces', '').replace(' 3D Printed', '');
+                if (!matchesCategory) return false;
+            }
+
+            // Search query check
+            if (query.length > 0) {
+                const titleMatch = (product.title || '').toLowerCase().includes(query);
+                const descMatch = (product.description || '').toLowerCase().includes(query);
+                const catMatch = (product.category || '').toLowerCase().includes(query);
+                return titleMatch || descMatch || catMatch;
+            }
+
+            return true;
+        });
+
+        // Show search status bar with count
+        if (statusBar) {
+            statusBar.style.display = 'flex';
+            const countText = statusBar.querySelector('.search-count-text');
+            if (countText) {
+                let text = '';
+                if (query && categoryFilter !== 'All') {
+                    text = `Found ${filteredProducts.length} gift${filteredProducts.length === 1 ? '' : 's'} matching "${searchQuery}" in ${categoryFilter}`;
+                } else if (query) {
+                    text = `Found ${filteredProducts.length} gift${filteredProducts.length === 1 ? '' : 's'} matching "${searchQuery}"`;
+                } else {
+                    text = `Showing ${filteredProducts.length} gift${filteredProducts.length === 1 ? '' : 's'} in ${categoryFilter}`;
+                }
+                countText.textContent = text;
+            }
+        }
+
+        // Render filtered products in a unified grid
+        dynamicContainer.innerHTML = '';
+
+        if (filteredProducts.length === 0) {
+            // Show beautiful "No results found" view
+            const noResultsHtml = `
+                <div class="search-no-results-card">
+                    <div class="no-results-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <circle cx="11" cy="11" r="8" stroke-dasharray="4 2"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            <line x1="11" y1="8" x2="11" y2="12" stroke-linecap="round"></line>
+                            <circle cx="11" cy="14" r="0.5" fill="currentColor"></circle>
+                        </svg>
+                    </div>
+                    <h3>No Premium Gifts Found</h3>
+                    <p>We couldn't find any products matching your selection. Try a different search term or browse our categories.</p>
+                    <button id="search-reset-btn" class="btn btn-primary search-reset-btn">Reset Search &amp; Filters</button>
+                </div>
+            `;
+            dynamicContainer.innerHTML = noResultsHtml;
+
+            // Bind click to reset button
+            const resetBtn = document.getElementById('search-reset-btn');
+            if (resetBtn) {
+                resetBtn.addEventListener('click', () => {
+                    const searchInput = document.getElementById('product-search-input');
+                    if (searchInput) searchInput.value = '';
+                    searchQuery = '';
+                    selectedCategory = 'All';
+
+                    updateSelectedChip();
+                    filterAndRender();
+                });
+            }
+        } else {
+            // Render grid
+            const gridHtml = `
+                <section class="container search-results-section" style="padding-top: 1.5rem;">
+                    <div class="grid search-results-grid" style="max-height: none; overflow: visible; margin-top: 1.5rem;">
+                        ${filteredProducts.map(p => createProductCard(p)).join('')}
+                    </div>
+                </section>
+            `;
+            dynamicContainer.innerHTML = gridHtml;
+        }
+    }
+
     function renderAllProducts() {
         // Home Page Category Grid Rendering
         const homeCategoryGrid = document.getElementById('home-categories-grid');
@@ -566,40 +786,12 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
 
-        const categoryNameMap = {
-            'Personalized': 'Personalized Gifts',
-            'Keychains': 'Premium Keychains',
-            '3D Printed': '3D Printed Masterpieces',
-            'Frames': 'Elegant Photo Frames'
-        };
-
         // Products Page Rendering
         const dynamicContainer = document.getElementById('dynamic-categories-container');
         if (dynamicContainer && document.getElementById('products-page-marker')) {
-            dynamicContainer.innerHTML = '';
-            categories.forEach((cat, index) => {
-                const matchName = cat.name;
-                const slug = String(cat.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-                const filtered = products.filter(p => {
-                    const mappedCat = categoryNameMap[p.category] || p.category;
-                    return p.category === matchName || mappedCat === matchName || p.category === matchName.replace(' Gifts', '').replace(' Premium', '').replace(' Elegant', '').replace(' Photo', '').replace(' Masterpieces', '').replace(' 3D Printed', '');
-                });
+            renderCategoryChips();
+            filterAndRender();
 
-                const bgColor = index % 2 === 1 ? 'background-color: var(--secondary-color);' : '';
-                const paddingStyle = index === 0 ? 'padding-top: 2rem;' : '';
-
-                const sectionHtml = `
-                    <section id="cat-${slug}" class="container" style="${bgColor} ${paddingStyle}">
-                        <h2>${cat.name}</h2>
-                        <div class="grid" id="grid-cat-${slug}">
-                            ${filtered.length === 0
-                        ? '<p style="grid-column: 1/-1; color: var(--text-light);">No products in this category yet.</p>'
-                        : filtered.map(p => createProductCard(p)).join('')}
-                        </div>
-                    </section>
-                `;
-                dynamicContainer.insertAdjacentHTML('beforeend', sectionHtml);
-            });
             // If there's a hash or cat query, scroll directly to that category section
             setTimeout(() => {
                 const params = new URLSearchParams(window.location.search);
@@ -649,6 +841,24 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     loadProducts();
+
+    // Initialize Search Bar Event Listeners if elements exist
+    const searchInput = document.getElementById('product-search-input');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            searchQuery = e.target.value;
+            filterAndRender();
+        });
+    }
+
+    const clearBtn = document.getElementById('search-clear-btn');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            if (searchInput) searchInput.value = '';
+            searchQuery = '';
+            filterAndRender();
+        });
+    }
 
     let currentSelectedProduct = null;
 
@@ -729,7 +939,7 @@ document.addEventListener("DOMContentLoaded", () => {
         modalAddToCart.addEventListener('click', () => {
             if (currentSelectedProduct) {
                 window.cartItems.push(currentSelectedProduct);
-                localStorage.setItem('sri_cart', JSON.stringify(window.cartItems));
+                saveCartState();
                 if (cartCountElement) cartCountElement.textContent = window.cartItems.length;
 
                 // Button animation
@@ -750,9 +960,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (modalProceedCheckout) {
         modalProceedCheckout.addEventListener('click', () => {
             if (currentSelectedProduct) {
-                window.cartItems.push(currentSelectedProduct);
-                localStorage.setItem('sri_cart', JSON.stringify(window.cartItems));
-                if (cartCountElement) cartCountElement.textContent = window.cartItems.length;
+                window.directCheckoutItems = [currentSelectedProduct];
+                window.isDirectCheckout = true;
                 modalOverlay.classList.remove('active');
                 const floatingCartBtn = document.querySelector('.floating-cart');
                 if (floatingCartBtn) floatingCartBtn.click();
@@ -942,7 +1151,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     window.removeCartItem = (index) => {
         window.cartItems.splice(index, 1);
-        localStorage.setItem('sri_cart', JSON.stringify(window.cartItems));
+        saveCartState();
         if (cartCountElement) cartCountElement.textContent = window.cartItems.length;
         window.openCart(); // refresh the view
     };
@@ -1061,7 +1270,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     alert(`Order placed successfully! Your Order ID is ${orderId}.`);
                     if (!window.isDirectCheckout) {
                         window.cartItems = [];
-                        localStorage.setItem('sri_cart', JSON.stringify(window.cartItems));
+                        saveCartState();
                         if (cartCountElement) cartCountElement.textContent = window.cartItems.length;
                     }
                     cartOverlay.classList.remove('active');
