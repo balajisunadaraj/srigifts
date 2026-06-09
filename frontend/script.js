@@ -87,9 +87,15 @@ document.addEventListener("DOMContentLoaded", () => {
     if (sessionId) {
         userFetchInProgress = true;
         fetch('https://srigifts.onrender.com/api/user/session/' + sessionId)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
+            .then(res => res.text())
+            .then(text => {
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch (parseError) {
+                    throw new Error(`Invalid session JSON response: ${parseError.message} | response: ${text}`);
+                }
+                if (data && data.success) {
                     currentUser = data.user;
                     console.log('User session loaded:', currentUser);
                 }
@@ -1346,8 +1352,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     const checkoutItems = window.isDirectCheckout ? window.directCheckoutItems : window.cartItems;
                     if (shouldRedirectToWhatsapp(checkoutItems)) {
-                        const whatsappMessage = encodeURIComponent('Order ID : (Your id (Enter your order id here), i want my gift with this (photo/name) :');
-                        window.location.href = `https://wa.me/919080125879?text=${whatsappMessage}`;
+                        const whatsappMessage = encodeURIComponent('my order id: (Enter your order id here) and i want my gift with this photo/name : ');
+                        window.location.href = `https://wa.me/918668001014?text=${whatsappMessage}`;
                     }
                 } catch (error) {
                     alert('Error placing order. Please try again.');
