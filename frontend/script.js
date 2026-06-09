@@ -2,8 +2,17 @@ document.addEventListener("DOMContentLoaded", () => {
     window.cartItems = [];
     try {
         const storedCart = localStorage.getItem('sri_cart');
-        if (storedCart) window.cartItems = JSON.parse(storedCart);
-    } catch (e) { }
+        if (storedCart) {
+            window.cartItems = JSON.parse(storedCart);
+        } else {
+            const backupCart = sessionStorage.getItem('sri_cart_backup');
+            if (backupCart) {
+                window.cartItems = JSON.parse(backupCart);
+            }
+        }
+    } catch (e) {
+        console.warn('Unable to restore cart from storage.', e);
+    }
 
     // HTML Escaping Helper to secure dynamic attributes from special characters
     function escapeHtml(str) {
@@ -36,12 +45,13 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (err) {
             if (isQuotaExceededError(err)) {
                 console.warn('Unable to save cart to localStorage, quota exceeded.', err);
+                window.cartStorageQuotaExceeded = true;
                 try {
                     sessionStorage.setItem('sri_cart_backup', JSON.stringify(window.cartItems));
+                    return true;
                 } catch (backupErr) {
                     console.warn('Unable to save cart backup to sessionStorage.', backupErr);
                 }
-                alert('Your cart could not be saved because browser storage is full. Remove items or checkout soon.');
                 return false;
             }
             throw err;
@@ -974,11 +984,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (modalProceedCheckout) {
         modalProceedCheckout.addEventListener('click', () => {
             if (currentSelectedProduct) {
-                window.directCheckoutItems = [currentSelectedProduct];
-                window.isDirectCheckout = true;
+                window.triggerDirectCheckout([currentSelectedProduct]);
                 modalOverlay.classList.remove('active');
-                const floatingCartBtn = document.querySelector('.floating-cart');
-                if (floatingCartBtn) floatingCartBtn.click();
             }
         });
     }
@@ -1129,15 +1136,19 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     window.openCart = () => {
-        if (window.cartItems.length > 0) {
+        const itemsToShow = window.isDirectCheckout && Array.isArray(window.directCheckoutItems) && window.directCheckoutItems.length > 0
+            ? window.directCheckoutItems
+            : window.cartItems;
+
+        if (itemsToShow.length > 0) {
             let itemsHtml = '';
             let total = 0;
-            window.cartItems.forEach((item, index) => {
+            itemsToShow.forEach((item, index) => {
                 itemsHtml += `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                     <span>${item.title}</span>
                     <div style="display:flex; align-items:center; gap:10px;">
                         <span>₹${item.price}</span>
-                        <button class="btn-small" style="color: red; padding: 2px 6px; font-weight: bold; border: 1px solid red; background: transparent; cursor: pointer;" onclick="window.removeCartItem(${index})">X</button>
+                        ${itemsToShow === window.cartItems ? `<button class="btn-small" style="color: red; padding: 2px 6px; font-weight: bold; border: 1px solid red; background: transparent; cursor: pointer;" onclick="window.removeCartItem(${index})">X</button>` : ''}
                     </div>
                 </div>`;
                 total += item.price;
