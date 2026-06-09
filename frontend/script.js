@@ -82,16 +82,23 @@ document.addEventListener("DOMContentLoaded", () => {
     // Auth State Handling
     const sessionId = localStorage.getItem('sri_session_id');
     let currentUser = null;
+    let userFetchInProgress = false;
 
     if (sessionId) {
+        userFetchInProgress = true;
         fetch('https://srigifts.onrender.com/api/user/session/' + sessionId)
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
                     currentUser = data.user;
+                    console.log('User session loaded:', currentUser);
                 }
+                userFetchInProgress = false;
             })
-            .catch(err => console.error('Session fetch error:', err));
+            .catch(err => {
+                console.error('Session fetch error:', err);
+                userFetchInProgress = false;
+            });
     }
 
     // Create Modal Element if it doesn't exist
@@ -994,26 +1001,58 @@ document.addEventListener("DOMContentLoaded", () => {
     if (modalAddWishlist) {
         modalAddWishlist.addEventListener('click', async () => {
             if (!currentSelectedProduct) return;
-            if (!currentUser) return alert('Please login to add to wishlist.');
+            if (!currentUser) {
+                if (userFetchInProgress) {
+                    alert('Loading user session... Please try again in a moment.');
+                    return;
+                }
+                alert('Please login to add to wishlist.');
+                return;
+            }
+
+            const originalText = modalAddWishlist.textContent;
+            const originalBg = modalAddWishlist.style.background;
+            modalAddWishlist.disabled = true;
+            modalAddWishlist.textContent = 'Adding...';
+            modalAddWishlist.style.background = '#999';
 
             try {
+                const body = {
+                    productTitle: currentSelectedProduct.title,
+                    productPrice: currentSelectedProduct.price,
+                    productImage: currentSelectedProduct.image
+                };
+                console.log('Adding to wishlist:', body, 'userId:', currentUser.id);
                 const res = await fetch('https://srigifts.onrender.com/api/user/' + currentUser.id + '/wishlist', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        productTitle: currentSelectedProduct.title,
-                        productPrice: currentSelectedProduct.price,
-                        productImage: currentSelectedProduct.image
-                    })
+                    body: JSON.stringify(body)
                 });
+                console.log('Wishlist response status:', res.status);
+                const resData = await res.json();
+                console.log('Wishlist response data:', resData);
                 if (res.ok) {
-                    alert('Added to your Wishlist!');
-                    modalOverlay.classList.remove('active');
+                    modalAddWishlist.textContent = '❤️ Added!';
+                    modalAddWishlist.style.background = '#25D366';
+                    setTimeout(() => {
+                        alert('Added to your Wishlist!');
+                        modalOverlay.classList.remove('active');
+                        modalAddWishlist.disabled = false;
+                        modalAddWishlist.textContent = originalText;
+                        modalAddWishlist.style.background = originalBg;
+                    }, 500);
                 } else {
-                    alert('Failed to add to wishlist');
+                    modalAddWishlist.disabled = false;
+                    modalAddWishlist.textContent = originalText;
+                    modalAddWishlist.style.background = originalBg;
+                    alert('Failed to add to wishlist: ' + (resData.error || res.statusText));
                 }
             } catch (err) {
-                alert('Error adding to wishlist');
+                console.error('Wishlist error:', err);
+                modalAddWishlist.disabled = false;
+                modalAddWishlist.textContent = originalText;
+                modalAddWishlist.style.background = originalBg;
+                alert('Error adding to wishlist: ' + err.message);
             }
         });
     }
