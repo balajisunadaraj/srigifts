@@ -48,6 +48,20 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    function addButtonClickAnimation() {
+        document.body.addEventListener('click', (e) => {
+            const button = e.target.closest('button');
+            if (!button || button.disabled) return;
+            button.style.transition = 'transform 0.08s ease';
+            button.style.transform = 'scale(0.97)';
+            setTimeout(() => {
+                button.style.transform = '';
+            }, 120);
+        });
+    }
+
+    addButtonClickAnimation();
+
     // Remove mobile hamburger menu and keep top nav inline on smaller screens
     const headerEl = document.querySelector('header');
     const navEl = document.querySelector('nav');
