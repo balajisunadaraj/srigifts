@@ -847,7 +847,7 @@
                         <a href="products.html" class="btn btn-accent" style="margin-top: 1rem;">Browse Products</a>
                     </div>`;
                 }
-            } catch (e) { 
+            } catch (e) {
                 console.error('Error fetching wishlist:', e);
                 const list = document.getElementById('wishlist');
                 
@@ -856,8 +856,6 @@
                 } else {
                     list.innerHTML = '<h2>My Wishlist</h2><p style="color: red;">Error loading wishlist. Please refresh the page.</p>';
                 }
-            }
-        }
             }
         }
 
