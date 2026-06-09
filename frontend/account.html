@@ -788,7 +788,7 @@
             try {
                 console.log('Fetching wishlist for userId:', userId, 'attempt:', retryCount + 1);
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
                 
                 const res = await fetch('https://srigifts.onrender.com/api/user/' + userId + '/wishlist', {
                     signal: controller.signal
@@ -806,7 +806,7 @@
                     console.error('API error:', res.status, data.error);
                     if (retryCount < 2) {
                         console.log('Retrying wishlist fetch...');
-                        setTimeout(() => fetchWishlist(userId, retryCount + 1), 1500);
+                        setTimeout(() => fetchWishlist(userId, retryCount + 1), 2000);
                         list.innerHTML += '<p style="color: #666; font-style: italic;">Loading wishlist...</p>';
                         return;
                     } else {
@@ -852,7 +852,13 @@
                 const list = document.getElementById('wishlist');
                 
                 if (e.name === 'AbortError') {
-                    list.innerHTML = '<h2>My Wishlist</h2><p style="color: #666; font-style: italic;">Request timed out. The server may be busy. Please try again.</p>';
+                    console.log('Wishlist fetch timeout, retrying...');
+                    if (retryCount < 2) {
+                        setTimeout(() => fetchWishlist(userId, retryCount + 1), 2000);
+                        list.innerHTML = '<h2>My Wishlist</h2><p style="color: #666; font-style: italic;">Loading wishlist...</p>';
+                    } else {
+                        list.innerHTML = '<h2>My Wishlist</h2><p style="color: red;">Request timed out. Please refresh the page or try again later.</p>';
+                    }
                 } else {
                     list.innerHTML = '<h2>My Wishlist</h2><p style="color: red;">Error loading wishlist. Please refresh the page.</p>';
                 }
