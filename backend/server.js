@@ -776,12 +776,6 @@ app.post('/api/admin/login', async (req, res) => {
         return res.json({ success: true });
     }
 
-    // Check resilient in-memory admin cache
-    const matchedInMemoryAdmin = inMemoryAdmins.find(admin => admin.username === username && admin.password === password);
-    if (matchedInMemoryAdmin) {
-        return res.json({ success: true });
-    }
-
     try {
         const { data, error } = await supabase.from('admins').select('*').eq('username', username).eq('password', password);
         if (!error && data && data.length > 0) return res.json({ success: true });
