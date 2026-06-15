@@ -569,7 +569,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 finalPrice = product.price;
                 badgeContent += `<br><span style="background: white; color: #d4af37; padding: 2px 4px; border-radius: 2px; font-size: 0.7rem; font-weight: bold; margin-top: 4px; display: inline-block;">${activeOffer.discount}% OFF</span>`;
 
-                displayPriceHtml = `<p class="product-price"><span style="text-decoration: line-through; color: #999; font-size: 0.9rem; margin-right: 8px;">₹${product.price}</span>₹${finalPrice}</p>`;
+                displayPriceHtml = `<p class="product-price">₹${finalPrice}</p>`;
             }
 
             offerBadgeHtml = `<div style="position: absolute; top: 10px; right: 10px; background: #d4af37; color: #111; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.75rem; z-index: 10; max-width: 150px; text-align: right; box-shadow: 0 2px 4px rgba(0,0,0,0.2); line-height: 1.2;">${badgeContent}</div>`;
