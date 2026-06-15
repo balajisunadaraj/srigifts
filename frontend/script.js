@@ -566,8 +566,7 @@ document.addEventListener("DOMContentLoaded", () => {
             let badgeContent = `${activeOffer.title}<br><span style="font-weight: normal; font-size: 0.65rem;">${activeOffer.message}</span>`;
 
             if (activeOffer.discount && activeOffer.discount > 0) {
-                finalPrice = product.price - (product.price * (activeOffer.discount / 100));
-                finalPrice = Math.round(finalPrice);
+                finalPrice = product.price;
                 badgeContent += `<br><span style="background: white; color: #d4af37; padding: 2px 4px; border-radius: 2px; font-size: 0.7rem; font-weight: bold; margin-top: 4px; display: inline-block;">${activeOffer.discount}% OFF</span>`;
 
                 displayPriceHtml = `<p class="product-price"><span style="text-decoration: line-through; color: #999; font-size: 0.9rem; margin-right: 8px;">₹${product.price}</span>₹${finalPrice}</p>`;
