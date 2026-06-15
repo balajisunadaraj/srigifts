@@ -358,7 +358,7 @@
         let userData = null;
         let userOrders = [];
         let reviewTargetProduct = '';
-        let reviewPhotoBase64 = null;
+        let reviewPhotoFile = null;
 
         document.addEventListener("DOMContentLoaded", () => {
             const sessionId = localStorage.getItem('sri_session_id');
@@ -731,7 +731,7 @@
             reviewTargetProduct = productTitle;
             document.getElementById('review-product-title').textContent = "Product: " + productTitle;
             document.getElementById('review-modal').classList.add('active');
-            reviewPhotoBase64 = null;
+            reviewPhotoFile = null;
             document.getElementById('photo-preview-img').style.display = 'none';
             document.getElementById('review-comment').value = '';
             document.querySelectorAll('input[name="rating"]').forEach(r => r.checked = false);
@@ -744,14 +744,10 @@
         function previewPhoto(event) {
             const file = event.target.files[0];
             if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    reviewPhotoBase64 = e.target.result;
-                    const img = document.getElementById('photo-preview-img');
-                    img.src = reviewPhotoBase64;
-                    img.style.display = 'block';
-                }
-                reader.readAsDataURL(file);
+                reviewPhotoFile = file;
+                const img = document.getElementById('photo-preview-img');
+                img.src = URL.createObjectURL(file);
+                img.style.display = 'block';
             }
         }
 
@@ -762,17 +758,17 @@
             const comment = document.getElementById('review-comment').value;
 
             try {
+                const body = new FormData();
+                body.append('productTitle', reviewTargetProduct);
+                body.append('userId', userData.id);
+                body.append('userName', userData.name || 'Guest');
+                body.append('rating', ratingInput.value);
+                body.append('comment', comment);
+                if (reviewPhotoFile) body.append('photo', reviewPhotoFile);
+
                 const res = await fetch('https://srigifts.onrender.com/api/reviews', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        productTitle: reviewTargetProduct,
-                        userId: userData.id,
-                        userName: userData.name,
-                        rating: ratingInput.value,
-                        comment: comment,
-                        photo: reviewPhotoBase64
-                    })
+                    body
                 });
                 const data = await res.json();
                 if(data.success) {

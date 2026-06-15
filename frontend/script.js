@@ -292,7 +292,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             const imgHtml = offer.image
-                ? `<div class="offer-slide-img"><img src="${offer.image}" alt="${escapeHtml(offer.title)}"></div>`
+                ? `<div class="offer-slide-img"><img src="${offer.image}" alt="${escapeHtml(offer.title)}" loading="lazy" decoding="async"></div>`
                 : `<div class="offer-slide-img offer-slide-img-placeholder"><span>🏷️</span></div>`;
 
             const discountHtml = offer.discount > 0
@@ -407,7 +407,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 reviews.forEach(review => {
                     totalStars += review.rating;
                     const starsHtml = '⭐'.repeat(review.rating) + '☆'.repeat(5 - review.rating);
-                    const photoHtml = review.photo ? `<div style="margin-top: 0.5rem;"><img src="${review.photo}" alt="Review Photo" style="max-width: 100px; max-height: 100px; border-radius: 4px; object-fit: cover; cursor: pointer;" onclick="window.open('${review.photo}', '_blank')"></div>` : '';
+                    const photoHtml = review.photo ? `<div style="margin-top: 0.5rem;"><img src="${review.photo}" alt="Review Photo" loading="lazy" decoding="async" style="max-width: 100px; max-height: 100px; border-radius: 4px; object-fit: cover; cursor: pointer;" onclick="window.open('${review.photo}', '_blank')"></div>` : '';
                     const dateStr = new Date(review.createdAt).toLocaleDateString('en-IN', {
                         day: 'numeric', month: 'short', year: 'numeric'
                     });
@@ -455,28 +455,23 @@ document.addEventListener("DOMContentLoaded", () => {
             const comment = document.getElementById('modal-review-comment').value.trim();
             const photoInput = document.getElementById('modal-review-photo');
 
-            let photoBase64 = null;
+            let photoFile = null;
             if (photoInput && photoInput.files && photoInput.files[0]) {
-                const file = photoInput.files[0];
-                photoBase64 = await new Promise((resolve) => {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(reader.result);
-                    reader.readAsDataURL(file);
-                });
+                photoFile = photoInput.files[0];
             }
 
             try {
+                const body = new FormData();
+                body.append('productTitle', currentSelectedProduct.title);
+                if (currentUser) body.append('userId', currentUser.id);
+                body.append('userName', userName);
+                body.append('rating', ratingVal);
+                body.append('comment', comment);
+                if (photoFile) body.append('photo', photoFile);
+
                 const res = await fetch('https://srigifts.onrender.com/api/reviews', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        productTitle: currentSelectedProduct.title,
-                        userId: currentUser ? currentUser.id : null,
-                        userName: userName,
-                        rating: ratingVal,
-                        comment: comment,
-                        photo: photoBase64
-                    })
+                    body
                 });
 
                 if (res.ok) {
@@ -576,10 +571,10 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         return `
-            <div class="product-card" data-title="${escapeHtml(product.title)}" data-desc="${escapeHtml(product.description || '')}" data-price="₹${finalPrice}" data-original-price="${product.price}" data-img="${product.image}" data-category="${escapeHtml(product.category || '')}" data-instock="${inStock ? '1' : '0'}" data-discount="${activeOffer && activeOffer.discount ? activeOffer.discount : 0}" style="position: relative;">
+            <div class="product-card" data-product-id="${product.id}" data-title="${escapeHtml(product.title)}" data-desc="${escapeHtml(product.description || '')}" data-price="₹${finalPrice}" data-original-price="${product.price}" data-category="${escapeHtml(product.category || '')}" data-instock="${inStock ? '1' : '0'}" data-discount="${activeOffer && activeOffer.discount ? activeOffer.discount : 0}" style="position: relative;">
                 ${overlayHtml}
                 ${offerBadgeHtml}
-                <div class="product-img-wrap" style="opacity: ${imgOpacity};"><img src="${product.image}" alt="${escapeHtml(product.title)}"></div>
+                <div class="product-img-wrap" style="opacity: ${imgOpacity};"><img src="${product.image}" alt="${escapeHtml(product.title)}" loading="lazy" decoding="async"></div>
                 <div class="product-info">
                     <h3 class="product-title">${escapeHtml(product.title)}</h3>
                     ${displayPriceHtml}
@@ -604,6 +599,17 @@ document.addEventListener("DOMContentLoaded", () => {
         'Frames': 'Elegant Photo Frames'
     };
 
+    function productMatchesCategory(product, categoryName) {
+        const mappedCat = categoryNameMap[product.category] || product.category;
+        return product.category === categoryName ||
+            mappedCat === categoryName ||
+            product.category === categoryName.replace(' Gifts', '').replace(' Premium', '').replace(' Elegant', '').replace(' Photo', '').replace(' Masterpieces', '').replace(' 3D Printed', '');
+    }
+
+    function getCategoriesWithProducts() {
+        return categories.filter(cat => products.some(product => productMatchesCategory(product, cat.name)));
+    }
+
     function renderCategoryChips() {
         const chipsContainer = document.getElementById('search-category-chips');
         if (!chipsContainer) return;
@@ -621,7 +627,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         chipsContainer.appendChild(allChip);
         
-        categories.forEach(cat => {
+        getCategoriesWithProducts().forEach(cat => {
             const chip = document.createElement('button');
             chip.className = `filter-chip ${selectedCategory === cat.name ? 'active' : ''}`;
             chip.textContent = cat.name;
@@ -652,13 +658,10 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!dynamicContainer) return;
 
         dynamicContainer.innerHTML = '';
-        categories.forEach((cat, index) => {
+        getCategoriesWithProducts().forEach((cat, index) => {
             const matchName = cat.name;
             const slug = String(cat.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-            const filtered = products.filter(p => {
-                const mappedCat = categoryNameMap[p.category] || p.category;
-                return p.category === matchName || mappedCat === matchName || p.category === matchName.replace(' Gifts', '').replace(' Premium', '').replace(' Elegant', '').replace(' Photo', '').replace(' Masterpieces', '').replace(' 3D Printed', '');
-            });
+            const filtered = products.filter(p => productMatchesCategory(p, matchName));
 
             const bgColor = index % 2 === 1 ? 'background-color: var(--secondary-color);' : '';
             const paddingStyle = index === 0 ? 'padding-top: 2rem;' : '';
@@ -703,11 +706,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const filteredProducts = products.filter(product => {
             // Category filter check
             if (categoryFilter !== 'All') {
-                const mappedCat = categoryNameMap[product.category] || product.category;
-                const matchesCategory = product.category === categoryFilter || 
-                                       mappedCat === categoryFilter || 
-                                       product.category === categoryFilter.replace(' Gifts', '').replace(' Premium', '').replace(' Elegant', '').replace(' Photo', '').replace(' Masterpieces', '').replace(' 3D Printed', '');
-                if (!matchesCategory) return false;
+                if (!productMatchesCategory(product, categoryFilter)) return false;
             }
 
             // Search query check
@@ -798,7 +797,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 categoryBtn.href = `products.html?cat=${encodeURIComponent(cat.name)}#cat-${slug}`;
                 categoryBtn.innerHTML = `
                     <div class="category-image-wrap">
-                        <img src="${escapeHtml(cat.image)}" alt="${escapeHtml(cat.name)}">
+                        <img src="${escapeHtml(cat.image)}" alt="${escapeHtml(cat.name)}" loading="lazy" decoding="async">
                     </div>
                     <div class="category-label">
                         <p class="category-name">${escapeHtml(cat.name)}</p>
@@ -881,9 +880,11 @@ document.addEventListener("DOMContentLoaded", () => {
     // Initialize Search Bar Event Listeners if elements exist
     const searchInput = document.getElementById('product-search-input');
     if (searchInput) {
+        let searchDebounceTimer = null;
         searchInput.addEventListener('input', (e) => {
             searchQuery = e.target.value;
-            filterAndRender();
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(filterAndRender, 180);
         });
     }
 
@@ -904,6 +905,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (card && modalOverlay) {
             if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return;
 
+            const productId = card.getAttribute('data-product-id');
+            const product = products.find(p => String(p.id) === String(productId));
             const title = card.getAttribute('data-title');
             const desc = card.getAttribute('data-desc');
             const priceStr = card.getAttribute('data-price');
@@ -911,7 +914,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const discount = parseInt(card.getAttribute('data-discount')) || 0;
             const price = parseFloat(priceStr.replace('₹', ''));
             const originalPrice = originalPriceStr ? parseFloat(originalPriceStr) : price;
-            const imgSrc = card.getAttribute('data-img');
+            const imgSrc = product ? product.image : '';
             const category = card.getAttribute('data-category') || '';
             const inStock = card.getAttribute('data-instock') === '1';
 

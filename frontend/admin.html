@@ -545,35 +545,30 @@
             const file = fileInput.files[0];
 
             if (file) {
-                const reader = new FileReader();
-                reader.onload = async function (event) {
-                    const product = {
-                        title: document.getElementById('p-title').value,
-                        category: document.getElementById('p-category').value,
-                        price: document.getElementById('p-price').value,
-                        img: event.target.result,
-                        description: document.getElementById('p-desc').value
-                    };
+                const product = new FormData();
+                product.append('title', document.getElementById('p-title').value);
+                product.append('category', document.getElementById('p-category').value);
+                product.append('price', document.getElementById('p-price').value);
+                product.append('description', document.getElementById('p-desc').value);
+                product.append('image', file);
 
-                    try {
-                        const res = await fetch('https://srigifts.onrender.com/api/products', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(product)
-                        });
+                try {
+                    const res = await fetch('https://srigifts.onrender.com/api/products', {
+                        method: 'POST',
+                        body: product
+                    });
 
-                        if (res.ok) {
-                            document.getElementById('p-success').style.display = 'block';
-                            e.target.reset();
-                            setTimeout(() => document.getElementById('p-success').style.display = 'none', 3000);
-                        } else {
-                            const errData = await res.json().catch(() => ({})); alert('Failed to add product: ' + (errData.error || 'Server error'));
-                        }
-                    } catch (error) {
-                        alert('Error connecting to server');
+                    if (res.ok) {
+                        document.getElementById('p-success').style.display = 'block';
+                        e.target.reset();
+                        fetchAdminProducts();
+                        setTimeout(() => document.getElementById('p-success').style.display = 'none', 3000);
+                    } else {
+                        const errData = await res.json().catch(() => ({})); alert('Failed to add product: ' + (errData.error || 'Server error'));
                     }
-                };
-                reader.readAsDataURL(file);
+                } catch (error) {
+                    alert('Error connecting to server');
+                }
             }
         });
 
@@ -787,7 +782,7 @@
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${product.id}</td>
-                    <td><img src="${product.image}" style="width:50px; height:50px; object-fit:cover; border-radius:4px;"></td>
+                    <td><img src="${product.image}" loading="lazy" decoding="async" style="width:50px; height:50px; object-fit:cover; border-radius:4px;"></td>
                     <td>${product.title}</td>
                     <td>${product.category}</td>
                     <td>₹${product.price}</td>
@@ -921,42 +916,30 @@
             e.preventDefault();
             
             const imageFile = document.getElementById('o-image').files[0];
-            
-            async function submitOffer(imageBase64) {
-                const offer = {
-                    title: document.getElementById('o-title').value,
-                    message: document.getElementById('o-message').value,
-                    offerDate: document.getElementById('o-date').value,
-                    discount: parseInt(document.getElementById('o-discount').value) || 0,
-                    image: imageBase64 || null
-                };
 
-                try {
-                    const res = await fetch('https://srigifts.onrender.com/api/offers', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(offer)
-                    });
-                    
-                    if (res.ok) {
-                        document.getElementById('offer-success').style.display = 'block';
-                        e.target.reset();
-                        fetchOffers();
-                        setTimeout(() => document.getElementById('offer-success').style.display = 'none', 3000);
-                    } else {
-                        const errData = await res.json().catch(() => ({})); alert('Failed to schedule offer: ' + (errData.error || 'Server error'));
-                    }
-                } catch (error) {
-                    alert('Error connecting to server');
+            const offer = new FormData();
+            offer.append('title', document.getElementById('o-title').value);
+            offer.append('message', document.getElementById('o-message').value);
+            offer.append('offerDate', document.getElementById('o-date').value);
+            offer.append('discount', parseInt(document.getElementById('o-discount').value) || 0);
+            if (imageFile) offer.append('image', imageFile);
+
+            try {
+                const res = await fetch('https://srigifts.onrender.com/api/offers', {
+                    method: 'POST',
+                    body: offer
+                });
+                
+                if (res.ok) {
+                    document.getElementById('offer-success').style.display = 'block';
+                    e.target.reset();
+                    fetchOffers();
+                    setTimeout(() => document.getElementById('offer-success').style.display = 'none', 3000);
+                } else {
+                    const errData = await res.json().catch(() => ({})); alert('Failed to schedule offer: ' + (errData.error || 'Server error'));
                 }
-            }
-            
-            if (imageFile) {
-                const reader = new FileReader();
-                reader.onload = (evt) => submitOffer(evt.target.result);
-                reader.readAsDataURL(imageFile);
-            } else {
-                submitOffer(null);
+            } catch (error) {
+                alert('Error connecting to server');
             }
         });
 
@@ -975,7 +958,7 @@
                 data.offers.forEach(offer => {
                     const tr = document.createElement('tr');
                     const imgHtml = offer.image 
-                        ? `<img src="${offer.image}" style="width:48px; height:40px; object-fit:cover; border-radius:4px; border:1px solid #eee;">` 
+                        ? `<img src="${offer.image}" loading="lazy" decoding="async" style="width:48px; height:40px; object-fit:cover; border-radius:4px; border:1px solid #eee;">` 
                         : '<span style="color:#bbb; font-size:0.8rem;">No image</span>';
                     tr.innerHTML = `
                         <td>${offer.id}</td>

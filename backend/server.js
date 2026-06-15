@@ -3,12 +3,32 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const crypto = require('crypto');
+const compression = require('compression');
+const multer = require('multer');
+const { v2: cloudinary } = require('cloudinary');
 const supabase = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 const fs = require('fs');
+
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 8 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+        if (!file.mimetype || !file.mimetype.startsWith('image/')) {
+            return cb(new Error('Only image uploads are allowed'));
+        }
+        cb(null, true);
+    }
+});
 
 // Resilient in-memory fallbacks when database tables are missing
 const CATEGORIES_FILE = path.join(__dirname, 'categories_fallback.json');
@@ -50,12 +70,61 @@ function saveLocalAdmins() {
 
 // Middleware
 app.use(cors());
+app.use(compression());
 app.use(express.json({ limit: '50mb' }));
-app.use(express.static(path.join(__dirname, '../frontend'))); // Serve static files from frontend
+app.use(express.static(path.join(__dirname, '../frontend'), {
+    etag: true,
+    maxAge: '1h',
+    setHeaders: (res, filePath) => {
+        if (/\.(?:png|jpe?g|webp|avif|gif|svg|ico)$/i.test(filePath)) {
+            res.setHeader('Cache-Control', 'public, max-age=2592000');
+        } else if (/\.(?:css|js)$/i.test(filePath)) {
+            res.setHeader('Cache-Control', 'public, max-age=86400');
+        }
+    }
+})); // Serve static files from frontend
 
 // ─── Helper: throw on supabase errors ────────────────────────────────────────
 function check(error, message) {
     if (error) throw new Error(message || error.message);
+}
+
+function cloudinaryReady() {
+    return Boolean(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET);
+}
+
+async function uploadImageToCloudinary(input, folder) {
+    if (!input) return null;
+    if (!cloudinaryReady()) {
+        throw new Error('Cloudinary credentials are not configured');
+    }
+
+    let source;
+    if (input.buffer && input.mimetype) {
+        source = `data:${input.mimetype};base64,${input.buffer.toString('base64')}`;
+    } else if (typeof input === 'string' && input.startsWith('data:image/')) {
+        source = input;
+    } else if (typeof input === 'string') {
+        return input;
+    }
+
+    if (!source) return null;
+    const result = await cloudinary.uploader.upload(source, {
+        folder,
+        resource_type: 'image',
+        transformation: [
+            { width: 1400, height: 1400, crop: 'limit' },
+            { quality: 'auto', fetch_format: 'auto' }
+        ]
+    });
+    return result.secure_url;
+}
+
+function multerErrorHandler(err, req, res, next) {
+    if (err instanceof multer.MulterError || err) {
+        return res.status(400).json({ error: err.message || 'Invalid upload' });
+    }
+    next();
 }
 
 // ─── API Routes ───────────────────────────────────────────────────────────────
@@ -160,7 +229,7 @@ app.get('/api/products', async (req, res) => {
     try {
         const { data, error } = await supabase
             .from('products')
-            .select('*')
+            .select('id,title,category,price,description,image,inStock')
             .order('id', { ascending: false });
         check(error);
         res.json(data);
@@ -170,17 +239,18 @@ app.get('/api/products', async (req, res) => {
 });
 
 // Add a new product
-app.post('/api/products', async (req, res) => {
+app.post('/api/products', upload.single('image'), async (req, res) => {
     const { title, category, price, description, img } = req.body;
 
-    if (!title || !price || !img) {
+    if (!title || !price || (!req.file && !img)) {
         return res.status(400).json({ error: 'Title, price, and image are required' });
     }
 
     try {
+        const imageUrl = await uploadImageToCloudinary(req.file || img, 'sri-gifts/products');
         const { data, error } = await supabase
             .from('products')
-            .insert([{ title, category, price, description, image: img }])
+            .insert([{ title, category, price, description, image: imageUrl }])
             .select('id')
             .single();
         if (error && (error.code === '42P01' || error.message.includes('relation') || error.message.includes('does not exist'))) {
@@ -431,7 +501,7 @@ app.get('/api/reviews', async (req, res) => {
     try {
         const { data, error } = await supabase
             .from('reviews')
-            .select('*')
+            .select('id,productTitle,userId,userName,rating,comment,photo,createdAt')
             .order('createdAt', { ascending: false });
         check(error);
         res.json({ success: true, reviews: data });
@@ -446,7 +516,7 @@ app.get('/api/reviews/:productTitle', async (req, res) => {
     try {
         const { data, error } = await supabase
             .from('reviews')
-            .select('*')
+            .select('id,productTitle,userId,userName,rating,comment,photo,createdAt')
             .eq('productTitle', productTitle)
             .order('createdAt', { ascending: false });
         check(error);
@@ -457,13 +527,14 @@ app.get('/api/reviews/:productTitle', async (req, res) => {
 });
 
 // Add a review
-app.post('/api/reviews', async (req, res) => {
+app.post('/api/reviews', upload.single('photo'), async (req, res) => {
     const { productTitle, userId, userName, rating, comment, photo } = req.body;
     if (!productTitle || !rating) {
         return res.status(400).json({ error: 'Product title and rating are required' });
     }
 
     try {
+        const photoUrl = await uploadImageToCloudinary(req.file || photo, 'sri-gifts/reviews');
         const { data, error } = await supabase
             .from('reviews')
             .insert([{
@@ -472,7 +543,7 @@ app.post('/api/reviews', async (req, res) => {
                 userName: userName || 'Guest',
                 rating,
                 comment: comment || '',
-                photo: photo || null
+                photo: photoUrl || null
             }])
             .select('id')
             .single();
@@ -665,7 +736,7 @@ app.get('/api/offers', async (req, res) => {
     try {
         const { data, error } = await supabase
             .from('offers')
-            .select('*')
+            .select('id,title,message,offerDate,category,discount,image')
             .order('offerDate', { ascending: false });
         check(error);
         res.json({ success: true, offers: data });
@@ -674,11 +745,12 @@ app.get('/api/offers', async (req, res) => {
     }
 });
 
-app.post('/api/offers', async (req, res) => {
+app.post('/api/offers', upload.single('image'), async (req, res) => {
     const { title, message, offerDate, category, discount, image } = req.body;
     try {
         const insertObj = { title, message, offerDate, category: category || 'All', discount: discount || 0 };
-        if (image) insertObj.image = image;
+        const imageUrl = await uploadImageToCloudinary(req.file || image, 'sri-gifts/offers');
+        if (imageUrl) insertObj.image = imageUrl;
         
         const { data, error } = await supabase
             .from('offers')
@@ -918,6 +990,8 @@ app.delete('/api/categories/:id', async (req, res) => {
         res.json({ success: true }); 
     }
 });
+
+app.use(multerErrorHandler);
 
 // Start the server
 app.listen(PORT, () => {
