@@ -121,14 +121,19 @@ async function uploadImageToCloudinary(input, folder) {
     }
 
     if (!source) return null;
-    const result = await cloudinary.uploader.upload(source, {
-        folder,
-        resource_type: 'image',
-        transformation: [
-            { width: 1400, height: 1400, crop: 'limit' },
-            { quality: 'auto', fetch_format: 'auto' }
-        ]
-    });
+    try {
+        const result = await cloudinary.uploader.upload(source, {
+            folder,
+            resource_type: 'image'
+        });
+
+        console.log("UPLOAD SUCCESS:", result.secure_url);
+        return result.secure_url;
+
+    } catch (err) {
+        console.error("CLOUDINARY REAL ERROR:", err);
+        throw err;
+    }
     return result.secure_url;
 }
 
