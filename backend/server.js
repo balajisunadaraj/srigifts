@@ -105,7 +105,7 @@ async function uploadImageToCloudinary(input, folder) {
     console.log("Cloudinary Ready:", cloudinaryReady());
     if (!input) return null;
     if (!cloudinaryReady()) {
-        throw new Error('Cloudinary credentials are not configured');
+        throw new Error('test_Error_999');
     }
 
     let source;
