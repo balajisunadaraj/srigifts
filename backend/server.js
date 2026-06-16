@@ -108,7 +108,7 @@ async function uploadImageToCloudinary(input, folder) {
     console.log("Cloudinary Ready:", cloudinaryReady());
     if (!input) return null;
     if (!cloudinaryReady()) {
-        throw new Error('test_Error_999');
+        throw new Error('Cloudinary configuration is missing.');
     }
 
     let source;
