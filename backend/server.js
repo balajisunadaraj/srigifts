@@ -114,6 +114,7 @@ function cloudinaryReady() {
     return ready;
 }
 async function uploadImageToCloudinary(input, folder) {
+    console.log("=== UPLOAD FUNCTION CALLED ===");
     console.log("Input:", input);
     console.log("Cloudinary Ready:", cloudinaryReady());
     if (!input) return null;
