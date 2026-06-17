@@ -251,7 +251,11 @@ app.get('/api/products', async (req, res) => {
             .select('id,title,category,price,description,image,inStock')
             .order('id', { ascending: false });
         check(error);
-        res.json(data);
+        const products = (data || []).map(p => ({
+            ...p,
+            image: p.image || 'https://via.placeholder.com/450x320?text=No+Image'
+        }));
+        res.json(products);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -269,15 +273,15 @@ app.post('/api/products', upload.single('image'), async (req, res) => {
         const imageUrl = await uploadImageToCloudinary(req.file || img, 'sri-gifts/products');
         const { data, error } = await supabase
             .from('products')
-            .insert([{ title, category, price, description, image: imageUrl }])
+            .insert([{ title, category, price, description, image: imageUrl || '' }])
             .select('id')
             .single();
         if (error && (error.code === '42P01' || error.message.includes('relation') || error.message.includes('does not exist'))) {
             console.warn('Products table missing.');
-            return res.json({ success: true, id: Date.now() });
+            return res.json({ success: true, id: Date.now(), image: imageUrl || '' });
         }
         check(error);
-        res.json({ success: true, id: data ? data.id : Date.now() });
+        res.json({ success: true, id: data ? data.id : Date.now(), image: imageUrl || '' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -758,7 +762,11 @@ app.get('/api/offers', async (req, res) => {
             .select('id,title,message,offerDate,category,discount,image')
             .order('offerDate', { ascending: false });
         check(error);
-        res.json({ success: true, offers: data });
+        const offers = (data || []).map(o => ({
+            ...o,
+            image: o.image || 'https://via.placeholder.com/450x320?text=No+Image'
+        }));
+        res.json({ success: true, offers });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -769,7 +777,7 @@ app.post('/api/offers', upload.single('image'), async (req, res) => {
     try {
         const insertObj = { title, message, offerDate, category: category || 'All', discount: discount || 0 };
         const imageUrl = await uploadImageToCloudinary(req.file || image, 'sri-gifts/offers');
-        if (imageUrl) insertObj.image = imageUrl;
+        insertObj.image = imageUrl || '';
         
         const { data, error } = await supabase
             .from('offers')
@@ -779,17 +787,17 @@ app.post('/api/offers', upload.single('image'), async (req, res) => {
         
         if (error && (error.code === '42P01' || error.message.includes('relation') || error.message.includes('does not exist'))) {
             console.warn('Offers table missing.');
-            return res.json({ success: true, id: Date.now() });
+            return res.json({ success: true, id: Date.now(), image: imageUrl || '' });
         }
         // If image column doesn't exist, retry without it
         if (error && (error.message.includes('column') || error.code === '42703')) {
             delete insertObj.image;
             const retry = await supabase.from('offers').insert([insertObj]).select('id').single();
             if (retry.error) { check(retry.error); }
-            return res.json({ success: true, id: retry.data ? retry.data.id : Date.now() });
+            return res.json({ success: true, id: retry.data ? retry.data.id : Date.now(), image: '' });
         }
         check(error);
-        res.json({ success: true, id: data ? data.id : Date.now() });
+        res.json({ success: true, id: data ? data.id : Date.now(), image: imageUrl || '' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
