@@ -26,6 +26,16 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     window.escapeHtml = escapeHtml;
 
+    const placeholderImage = 'https://via.placeholder.com/450x320?text=No+Image';
+    function normalizeImageUrl(url) {
+        if (!url) return placeholderImage;
+        const trimmed = String(url).trim();
+        if (!trimmed) return placeholderImage;
+        if (trimmed.startsWith('data:image/')) return trimmed;
+        if (/^https?:\/\//i.test(trimmed)) return trimmed.replace(/\s+/g, '%20');
+        return placeholderImage;
+    }
+
     const cartCountElement = document.querySelector('.cart-count');
     if (cartCountElement) cartCountElement.textContent = window.cartItems.length;
 
@@ -545,7 +555,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const inStock = product.inStock !== 0; // true unless explicitly 0
         const overlayHtml = inStock ? '' : '<div style="position: absolute; top: 10px; left: 10px; background: red; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; z-index: 10;">Out of Stock</div>';
         const imgOpacity = inStock ? '1' : '0.5';
-        const productImage = product.image || 'https://via.placeholder.com/450x320?text=No+Image';
+        const productImage = normalizeImageUrl(product.image);
 
         // Check for active offer
         let offerBadgeHtml = '';
@@ -921,7 +931,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const discount = parseInt(card.getAttribute('data-discount')) || 0;
             const price = parseFloat(priceStr.replace('₹', ''));
             const originalPrice = originalPriceStr ? parseFloat(originalPriceStr) : price;
-            const imgSrc = card.getAttribute('data-image') || (product ? product.image : '') || 'https://via.placeholder.com/450x320?text=No+Image';
+            const imgSrc = normalizeImageUrl(card.getAttribute('data-image') || (product ? product.image : ''));
             const category = card.getAttribute('data-category') || '';
             const inStock = card.getAttribute('data-instock') === '1';
 
