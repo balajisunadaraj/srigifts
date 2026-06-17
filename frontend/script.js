@@ -197,19 +197,19 @@ document.addEventListener("DOMContentLoaded", () => {
     const homeCategories = [
         { name: 'Engraving gifts', image: 'engraving gifts.png' },
         { name: 'Photo frames', image: 'Photo frames.png' },
-        { name: 'Caricature', image: 'Caricature .png' },
+        { name: 'Caricature and Cutouts', image: 'Caricature .png' },
         { name: 'Customized Water bottle', image: 'Customized Water bottle.png' },
         { name: 'Customized gifts', image: 'Customized gifts.png' },
         { name: 'Wooden Engraving', image: 'Wooden Engraving.png' },
         { name: 'Lamp gifts', image: 'Lamp gifts.png' },
         { name: 'Gifts & Toys', image: 'Gifts & Toys.png' },
         { name: 'Customized clock', image: 'Customized clock.png' },
-        { name: 'MDF Items', image: 'MDF Items.png' },
+        { name: 'Home Decors', image: 'home decor.png' },
         { name: 'Acrylic frame', image: 'Acrylic frame.png' },
         { name: 'Keychains', image: 'Keychains.png' },
         { name: 'Couples gifts', image: 'Couples gifts.png' },
         { name: 'Mobile customized cover', image: 'Mobile customize cover.png' },
-        { name: 'Seed pencil & pen', image: 'Seed pencil & pen.png' },
+        { name: 'Return Gifts', image: 'return gifts.png' },
         { name: 'Wallet engraving & Sketch', image: 'Wallet engraving & Sketch.png' }
     ];
     let products = [];
@@ -282,6 +282,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 day: 'numeric', month: 'short', year: 'numeric'
             });
 
+            const offerCategoryLabel = offer.category === 'All' || !offer.category ? 'Storewide' : offer.category;
             let badgeHtml = '';
             if (offer.discount > 0) {
                 badgeHtml = `<span class="offer-badge discount">${offer.discount}% OFF</span>`;
@@ -296,7 +297,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 : `<div class="offer-slide-img offer-slide-img-placeholder"><span>🏷️</span></div>`;
 
             const discountHtml = offer.discount > 0
-                ? `<div class="offer-slide-discount">${offer.discount}% OFF on ${offer.category === 'All' ? 'All Products' : offer.category}</div>`
+                ? `<div class="offer-slide-discount">${offer.discount}% OFF ${offerCategoryLabel === 'Storewide' ? 'Storewide' : 'on ' + offerCategoryLabel}</div>`
                 : '';
 
             const slide = `
@@ -308,7 +309,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         <p class="offer-slide-message">${offer.message}</p>
                         ${discountHtml}
                         <div class="offer-slide-meta">
-                            <span>For: ${offer.category === 'All' ? 'All Products' : offer.category}</span>
+                            <span>For: ${offerCategoryLabel}</span>
                             <span>${dateStr}</span>
                         </div>
                     </div>
@@ -544,6 +545,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const inStock = product.inStock !== 0; // true unless explicitly 0
         const overlayHtml = inStock ? '' : '<div style="position: absolute; top: 10px; left: 10px; background: red; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; z-index: 10;">Out of Stock</div>';
         const imgOpacity = inStock ? '1' : '0.5';
+        const productImage = product.image || 'https://via.placeholder.com/450x320?text=No+Image';
 
         // Check for active offer
         let offerBadgeHtml = '';
@@ -571,10 +573,10 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         return `
-            <div class="product-card" data-product-id="${product.id}" data-title="${escapeHtml(product.title)}" data-desc="${escapeHtml(product.description || '')}" data-price="₹${finalPrice}" data-original-price="${product.price}" data-category="${escapeHtml(product.category || '')}" data-instock="${inStock ? '1' : '0'}" data-discount="${activeOffer && activeOffer.discount ? activeOffer.discount : 0}" style="position: relative;">
+            <div class="product-card" data-product-id="${product.id}" data-title="${escapeHtml(product.title)}" data-desc="${escapeHtml(product.description || '')}" data-price="₹${finalPrice}" data-original-price="${product.price}" data-category="${escapeHtml(product.category || '')}" data-image="${escapeHtml(productImage)}" data-instock="${inStock ? '1' : '0'}" data-discount="${activeOffer && activeOffer.discount ? activeOffer.discount : 0}" style="position: relative;">
                 ${overlayHtml}
                 ${offerBadgeHtml}
-                <div class="product-img-wrap" style="opacity: ${imgOpacity};"><img src="${product.image}" alt="${escapeHtml(product.title)}" loading="lazy" decoding="async"></div>
+                <div class="product-img-wrap" style="opacity: ${imgOpacity};"><img src="${productImage}" alt="${escapeHtml(product.title)}" loading="lazy" decoding="async"></div>
                 <div class="product-info">
                     <h3 class="product-title">${escapeHtml(product.title)}</h3>
                     ${displayPriceHtml}
@@ -596,14 +598,19 @@ document.addEventListener("DOMContentLoaded", () => {
         'Personalized': 'Personalized Gifts',
         'Keychains': 'Premium Keychains',
         '3D Printed': '3D Printed Masterpieces',
-        'Frames': 'Elegant Photo Frames'
+        'Frames': 'Elegant Photo Frames',
+        'Caricature': 'Caricature and Cutouts',
+        'MDF Items': 'Home Decors',
+        'Seed pencil & pen': 'Return Gifts',
+        'Seed pencils & pen': 'Return Gifts'
     };
 
     function productMatchesCategory(product, categoryName) {
+        const normalized = (value) => String(value || '').trim().toLowerCase();
         const mappedCat = categoryNameMap[product.category] || product.category;
-        return product.category === categoryName ||
-            mappedCat === categoryName ||
-            product.category === categoryName.replace(' Gifts', '').replace(' Premium', '').replace(' Elegant', '').replace(' Photo', '').replace(' Masterpieces', '').replace(' 3D Printed', '');
+        return normalized(product.category) === normalized(categoryName) ||
+            normalized(mappedCat) === normalized(categoryName) ||
+            normalized(product.category) === normalized(categoryName.replace(' Gifts', '').replace(' Premium', '').replace(' Elegant', '').replace(' Photo', '').replace(' Masterpieces', '').replace(' 3D Printed', ''));
     }
 
     function getCategoriesWithProducts() {
@@ -914,11 +921,11 @@ document.addEventListener("DOMContentLoaded", () => {
             const discount = parseInt(card.getAttribute('data-discount')) || 0;
             const price = parseFloat(priceStr.replace('₹', ''));
             const originalPrice = originalPriceStr ? parseFloat(originalPriceStr) : price;
-            const imgSrc = product ? product.image : '';
+            const imgSrc = card.getAttribute('data-image') || (product ? product.image : '') || 'https://via.placeholder.com/450x320?text=No+Image';
             const category = card.getAttribute('data-category') || '';
             const inStock = card.getAttribute('data-instock') === '1';
 
-            if (title && imgSrc) {
+            if (title) {
                 currentSelectedProduct = { title, price, image: imgSrc, category };
                 document.getElementById('modal-title').textContent = title;
                 document.getElementById('modal-desc').textContent = desc || 'Beautifully crafted premium gift.';
