@@ -117,7 +117,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <!-- Top Half: Product Details -->
                     <div class="modal-main-details" style="display: flex; gap: 2rem; margin-bottom: 2rem; flex-wrap: wrap;">
                         <div class="modal-img" style="flex: 0.8; min-width: 200px; max-width: 280px; height: 280px; display: flex; align-items: center; justify-content: center; margin: 0 auto; overflow: hidden; border-radius: 8px;">
-                            <img id="modal-image" src="" alt="Product" style="width: 100%; height: 100%; object-fit: cover; background: #f9f9f9; border: 1px solid #eee;">
+                            <img id="modal-image" src="" alt="Product" style="width: 100%; height: 100%; object-fit: cover; background: #f9f9f9; border: 1px solid #eee;" onerror="this.onerror=null;this.src='https://via.placeholder.com/450x320?text=Image+Not+Available';">
                         </div>
                         <div class="modal-details" style="flex: 1.2; min-width: 250px; display: flex; flex-direction: column; justify-content: space-between;">
                             <div>
@@ -576,7 +576,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <div class="product-card" data-product-id="${product.id}" data-title="${escapeHtml(product.title)}" data-desc="${escapeHtml(product.description || '')}" data-price="₹${finalPrice}" data-original-price="${product.price}" data-category="${escapeHtml(product.category || '')}" data-image="${escapeHtml(productImage)}" data-instock="${inStock ? '1' : '0'}" data-discount="${activeOffer && activeOffer.discount ? activeOffer.discount : 0}" style="position: relative;">
                 ${overlayHtml}
                 ${offerBadgeHtml}
-                <div class="product-img-wrap" style="opacity: ${imgOpacity};"><img src="${productImage}" alt="${escapeHtml(product.title)}" loading="lazy" decoding="async"></div>
+                <div class="product-img-wrap" style="opacity: ${imgOpacity};"><img src="${productImage}" alt="${escapeHtml(product.title)}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='https://via.placeholder.com/450x320?text=Image+Not+Available';"></div>
                 <div class="product-info">
                     <h3 class="product-title">${escapeHtml(product.title)}</h3>
                     ${displayPriceHtml}

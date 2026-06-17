@@ -107,11 +107,6 @@ async function uploadImageToCloudinary(input, folder) {
     console.log("Input:", input);
     console.log("Cloudinary Ready:", cloudinaryReady());
     if (!input) return null;
-    if (!cloudinaryReady()) {
-        console.warn('Cloudinary configuration is missing. Skipping image upload and storing product/offer without an image.');
-        if (typeof input === 'string') return input;
-        return null;
-    }
 
     let source;
     if (input.buffer && input.mimetype) {
@@ -123,6 +118,12 @@ async function uploadImageToCloudinary(input, folder) {
     }
 
     if (!source) return null;
+
+    if (!cloudinaryReady()) {
+        console.warn('Cloudinary is not configured. Using base64 image string fallback.');
+        return source;
+    }
+
     try {
         const result = await cloudinary.uploader.upload(source, {
             folder,
@@ -131,12 +132,11 @@ async function uploadImageToCloudinary(input, folder) {
 
         console.log("UPLOAD SUCCESS:", result.secure_url);
         return result.secure_url;
-
     } catch (err) {
         console.error("CLOUDINARY REAL ERROR:", err);
-        throw err;
+        console.warn('Upload failed. Falling back to base64 image string.');
+        return source;
     }
-    return result.secure_url;
 }
 
 function multerErrorHandler(err, req, res, next) {

@@ -549,33 +549,85 @@
             
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
-            
-            doc.setFontSize(22);
-            doc.text("SRI GIFTS - INVOICE", 20, 20);
-            
+            const lineHeight = 8;
+            const margin = 20;
+            let y = 20;
+
+            doc.setFontSize(20);
+            doc.text("SRI GIFTS", margin, y);
             doc.setFontSize(12);
-            doc.text("Order ID: " + order.orderId, 20, 35);
-            doc.text("Date: " + new Date().toLocaleDateString(), 20, 42);
-            doc.text("Status: " + order.status, 20, 49);
-            
-            doc.text("Customer: " + (order.customerName || userData.name), 20, 65);
-            doc.text("Address: " + order.address + ", " + order.city + " - " + order.pincode, 20, 72);
-            
-            doc.setFontSize(14);
-            doc.text("Items:", 20, 90);
+            doc.text("Professional Gift Store Invoice", margin, y + 8);
+            doc.setLineWidth(0.5);
+            doc.line(margin, y + 12, 190, y + 12);
+
+            y += 22;
+            doc.setFontSize(11);
+            doc.text(`Invoice No: ${order.orderId}`, margin, y);
+            doc.text(`Date: ${new Date().toLocaleDateString()}`, 140, y);
+            y += lineHeight;
+            doc.text(`Status: ${order.status}`, margin, y);
+            doc.text(`Customer: ${order.customerName || userData.name}`, 140, y);
+            y += lineHeight;
+            doc.text(`Address: ${order.address || ''}`, margin, y);
+            y += lineHeight;
+            doc.text(`${order.city || ''} - ${order.pincode || ''}`, margin, y);
+
+            y += lineHeight * 2;
             doc.setFontSize(12);
-            let y = 100;
+            doc.text('Product Details', margin, y);
+            y += lineHeight;
+            doc.setDrawColor(0);
+            doc.setFillColor(245, 245, 245);
+            doc.rect(margin, y - 6, 170, lineHeight, 'F');
+            doc.setFontSize(10);
+            doc.text('Item', margin + 2, y);
+            doc.text('Qty', 110, y);
+            doc.text('Unit Price', 130, y);
+            doc.text('Amount', 165, y);
+            y += lineHeight;
+
+            let items = [];
             try {
-                const items = JSON.parse(order.items);
-                items.forEach((item, i) => {
-                    doc.text(`${i+1}. ${item.title} (₹${item.price}) x ${item.quantity || 1}`, 25, y);
-                    y += 8;
-                });
-            } catch(e) {}
-            
-            doc.setFontSize(16);
-            doc.text("Total: ₹" + order.total, 20, y + 15);
-            
+                items = JSON.parse(order.items);
+            } catch(e) {
+                items = [];
+            }
+
+            items.forEach((item, index) => {
+                const qty = item.quantity || 1;
+                const price = parseFloat(item.price || 0);
+                const amount = qty * price;
+                if (y > 260) {
+                    doc.addPage();
+                    y = 20;
+                }
+                doc.text(`${index + 1}. ${item.title}`, margin + 2, y);
+                doc.text(`${qty}`, 110, y);
+                doc.text(`₹${price.toFixed(2)}`, 130, y);
+                doc.text(`₹${amount.toFixed(2)}`, 165, y);
+                y += lineHeight;
+            });
+
+            y += lineHeight;
+            doc.setFontSize(11);
+            doc.text(`Subtotal: ₹${parseFloat(order.total || 0).toFixed(2)}`, margin + 100, y);
+            y += lineHeight;
+            if (order.shippingCharge) {
+                doc.text(`Shipping: ₹${parseFloat(order.shippingCharge).toFixed(2)}`, margin + 100, y);
+                y += lineHeight;
+            }
+            if (order.discount) {
+                doc.text(`Discount: ₹${parseFloat(order.discount).toFixed(2)}`, margin + 100, y);
+                y += lineHeight;
+            }
+            doc.setFontSize(13);
+            doc.text(`Grand Total: ₹${parseFloat(order.total || 0).toFixed(2)}`, margin + 100, y + 5);
+
+            y += lineHeight * 3;
+            doc.setFontSize(10);
+            doc.text('Thank you for shopping with SRI GIFTS!', margin, y);
+            doc.text('For any support, contact us at srigiftssvks@gmail.com', margin, y + 6);
+
             doc.save(`Invoice_${order.orderId}.pdf`);
         }
 
