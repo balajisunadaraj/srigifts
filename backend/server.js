@@ -108,7 +108,9 @@ async function uploadImageToCloudinary(input, folder) {
     console.log("Cloudinary Ready:", cloudinaryReady());
     if (!input) return null;
     if (!cloudinaryReady()) {
-        throw new Error('Cloudinary configuration is missing.');
+        console.warn('Cloudinary configuration is missing. Skipping image upload and storing product/offer without an image.');
+        if (typeof input === 'string') return input;
+        return null;
     }
 
     let source;

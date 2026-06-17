@@ -564,10 +564,11 @@
                         fetchAdminProducts();
                         setTimeout(() => document.getElementById('p-success').style.display = 'none', 3000);
                     } else {
-                        const errData = await res.json().catch(() => ({})); alert('Failed to add product: ' + (errData.error || 'Server error'));
+                        const errData = await res.json().catch(() => ({}));
+                        alert('Failed to add product: ' + (errData.error || res.statusText || 'Server error') + ' (' + res.status + ')');
                     }
                 } catch (error) {
-                    alert('Error connecting to server');
+                    alert('Error connecting to server: ' + (error.message || error));
                 }
             }
         });
@@ -936,10 +937,11 @@
                     fetchOffers();
                     setTimeout(() => document.getElementById('offer-success').style.display = 'none', 3000);
                 } else {
-                    const errData = await res.json().catch(() => ({})); alert('Failed to schedule offer: ' + (errData.error || 'Server error'));
+                    const errData = await res.json().catch(() => ({}));
+                    alert('Failed to schedule offer: ' + (errData.error || res.statusText || 'Server error') + ' (' + res.status + ')');
                 }
             } catch (error) {
-                alert('Error connecting to server');
+                alert('Error connecting to server: ' + (error.message || error));
             }
         });
 
